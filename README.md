@@ -5,7 +5,8 @@ JWT-authenticated attendance app for students and admins, designed for 100+ user
 ## Features
 
 - Student registration/login with JWT
-- Admin bootstrap user from `.env`
+- Admin registration protected by private `ADMIN_REGISTRATION_CODE`
+- Optional admin bootstrap user from `.env`
 - Students mark attendance manually
 - Auto-mark `present` every day at `11:00 PM` (timezone from `TZ`) if not marked
 - Students can request admin to keep attendance empty for a date with a message
@@ -43,7 +44,8 @@ copy .env.example .env
 
 - `MONGODB_URI`
 - `JWT_SECRET`
-- `ADMIN_EMAIL`, `ADMIN_PASSWORD`
+- `ADMIN_REGISTRATION_CODE` (share only with trusted admins)
+- Optional bootstrap admin: `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME`
 
 4. Start app:
 
@@ -85,8 +87,16 @@ Deploy easily on Render/Railway/Vercel (Node server) with these env vars:
 - `JWT_SECRET`
 - `JWT_EXPIRES_IN`
 - `TZ`
+- `ADMIN_REGISTRATION_CODE`
 - `ADMIN_NAME`
 - `ADMIN_EMAIL`
 - `ADMIN_PASSWORD`
 
 Use a MongoDB Atlas free instance as database.
+
+## Auth Role Flow
+
+- Login form has role selection (`User` / `Admin`)
+- Register form has role selection
+- If `Admin` is selected on register, `Admin Secret Code` is required
+- Backend verifies secret code against `ADMIN_REGISTRATION_CODE`

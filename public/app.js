@@ -3,13 +3,19 @@ const state = {
   user: null
 };
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const STRONG_PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+
 const el = {
   authSection: document.getElementById("authSection"),
   appSection: document.getElementById("appSection"),
   loginTab: document.getElementById("loginTab"),
   registerTab: document.getElementById("registerTab"),
   loginForm: document.getElementById("loginForm"),
+  loginRole: document.getElementById("loginRole"),
   registerForm: document.getElementById("registerForm"),
+  registerRole: document.getElementById("registerRole"),
+  adminCode: document.getElementById("adminCode"),
   messageBox: document.getElementById("messageBox"),
   welcomeText: document.getElementById("welcomeText"),
   metaText: document.getElementById("metaText"),
@@ -17,9 +23,11 @@ const el = {
   studentPanel: document.getElementById("studentPanel"),
   adminPanel: document.getElementById("adminPanel"),
   markTodayBtn: document.getElementById("markTodayBtn"),
+  markTodayAbsentBtn: document.getElementById("markTodayAbsentBtn"),
   refreshMeBtn: document.getElementById("refreshMeBtn"),
   markDateInput: document.getElementById("markDateInput"),
   markDateBtn: document.getElementById("markDateBtn"),
+  markDateAbsentBtn: document.getElementById("markDateAbsentBtn"),
   myAttendanceList: document.getElementById("myAttendanceList"),
   requestDate: document.getElementById("requestDate"),
   requestMsg: document.getElementById("requestMsg"),
@@ -38,6 +46,32 @@ function showMessage(text, isError = false) {
   el.messageBox.style.background = isError ? "#712a2a" : "#1f332e";
   el.messageBox.classList.add("show");
   setTimeout(() => el.messageBox.classList.remove("show"), 2500);
+}
+
+function clearNode(node) {
+  while (node.firstChild) {
+    node.removeChild(node.firstChild);
+  }
+}
+
+function makeItem() {
+  const item = document.createElement("div");
+  item.className = "item";
+  return item;
+}
+
+function appendTextLine(parent, text) {
+  const line = document.createElement("div");
+  line.textContent = text;
+  parent.appendChild(line);
+}
+
+function validEmail(email) {
+  return EMAIL_REGEX.test(email);
+}
+
+function validStrongPassword(password) {
+  return STRONG_PASSWORD_REGEX.test(password);
 }
 
 async function api(path, options = {}) {
@@ -66,6 +100,12 @@ function setTab(tab) {
   el.registerForm.classList.toggle("hidden", login);
   el.loginTab.classList.toggle("active", login);
   el.registerTab.classList.toggle("active", !login);
+}
+
+function toggleAdminCodeField() {
+  const isAdminRegistration = el.registerRole.value === "admin";
+  el.adminCode.classList.toggle("hidden", !isAdminRegistration);
+  el.adminCode.required = isAdminRegistration;
 }
 
 function logout() {
@@ -106,19 +146,23 @@ async function loadStudentData() {
     api("/api/attendance/can-mark")
   ]);
 
-  el.myAttendanceList.innerHTML = attendanceRes.attendance
-    .map(
-      (a) =>
-        `<div class="item"><strong>${a.dateKey}</strong> | ${a.status} | by ${a.markedBy}</div>`
-    )
-    .join("");
+  clearNode(el.myAttendanceList);
+  attendanceRes.attendance.forEach((attendance) => {
+    const item = makeItem();
+    appendTextLine(
+      item,
+      `${attendance.dateKey} | ${attendance.status} | by ${attendance.markedBy}`
+    );
+    el.myAttendanceList.appendChild(item);
+  });
 
-  el.myRequestList.innerHTML = requestsRes.requests
-    .map(
-      (r) =>
-        `<div class="item"><strong>${r.dateKey}</strong> | ${r.status} | ${r.message}</div>`
-    )
-    .join("");
+  clearNode(el.myRequestList);
+  requestsRes.requests.forEach((request) => {
+    const item = makeItem();
+    appendTextLine(item, `${request.dateKey} | ${request.status}`);
+    appendTextLine(item, request.message);
+    el.myRequestList.appendChild(item);
+  });
 
   if (markRes.approvedDateKeysOpen.length) {
     showMessage(
@@ -130,11 +174,20 @@ async function loadStudentData() {
 async function onLogin(e) {
   e.preventDefault();
   try {
+    const role = el.loginRole.value;
     const email = document.getElementById("loginEmail").value.trim();
     const password = document.getElementById("loginPassword").value.trim();
+
+    if (!validEmail(email)) {
+      return showMessage("Please enter a valid email address", true);
+    }
+    if (!password) {
+      return showMessage("Password is required", true);
+    }
+
     const data = await api("/api/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email, password, role })
     });
     state.token = data.token;
     localStorage.setItem("token", state.token);
@@ -149,12 +202,31 @@ async function onLogin(e) {
 async function onRegister(e) {
   e.preventDefault();
   try {
+    const role = el.registerRole.value;
     const name = document.getElementById("registerName").value.trim();
     const email = document.getElementById("registerEmail").value.trim();
     const password = document.getElementById("registerPassword").value.trim();
+    const adminCode = el.adminCode.value.trim();
+
+    if (!name || name.length < 2) {
+      return showMessage("Name must be at least 2 characters", true);
+    }
+    if (!validEmail(email)) {
+      return showMessage("Please enter a valid email address", true);
+    }
+    if (!validStrongPassword(password)) {
+      return showMessage(
+        "Password must be 8+ chars with upper, lower, number, and special character",
+        true
+      );
+    }
+    if (role === "admin" && !adminCode) {
+      return showMessage("Admin secret code is required", true);
+    }
+
     const data = await api("/api/auth/register", {
       method: "POST",
-      body: JSON.stringify({ name, email, password })
+      body: JSON.stringify({ name, email, password, role, adminCode })
     });
     state.token = data.token;
     localStorage.setItem("token", state.token);
@@ -166,10 +238,10 @@ async function onRegister(e) {
   }
 }
 
-async function markAttendance(dateKey) {
+async function markAttendance(status, dateKey) {
   await api("/api/attendance/mark", {
     method: "POST",
-    body: JSON.stringify(dateKey ? { dateKey } : {})
+    body: JSON.stringify(dateKey ? { dateKey, status } : { status })
   });
 }
 
@@ -194,26 +266,46 @@ async function searchAttendance() {
 
   try {
     const data = await api(`/api/admin/attendance/search?name=${encodeURIComponent(name)}`);
-    el.searchUsers.innerHTML = data.users
-      .map(
-        (u) =>
-          `<div class="item"><strong>${u.name}</strong> (${u.email}) | Joined: ${formatDate(
-            u.joiningDate
-          )} | Days left: ${u.daysLeftFor30}</div>`
-      )
-      .join("");
 
-    el.searchAttendance.innerHTML = data.attendance
-      .map(
-        (a) => `<div class="item">
-          <strong>${a.user?.name || "Unknown"}</strong> | ${a.dateKey} | ${a.status} | ${a.markedBy}
-          <div class="row wrap">
-            <button class="secondary" onclick="adminSetStatus('${a._id}','present')">Set Present</button>
-            <button class="secondary" onclick="adminSetStatus('${a._id}','absent')">Set Absent</button>
-          </div>
-        </div>`
-      )
-      .join("");
+    clearNode(el.searchUsers);
+    data.users.forEach((user) => {
+      const item = makeItem();
+      appendTextLine(item, `${user.name} (${user.email})`);
+      appendTextLine(
+        item,
+        `Joined: ${formatDate(user.joiningDate)} | Days left: ${user.daysLeftFor30}`
+      );
+      el.searchUsers.appendChild(item);
+    });
+
+    clearNode(el.searchAttendance);
+    data.attendance.forEach((attendance) => {
+      const item = makeItem();
+      appendTextLine(
+        item,
+        `${attendance.user?.name || "Unknown"} | ${attendance.dateKey} | ${attendance.status} | ${
+          attendance.markedBy
+        }`
+      );
+
+      const actionRow = document.createElement("div");
+      actionRow.className = "row wrap";
+
+      const presentBtn = document.createElement("button");
+      presentBtn.className = "secondary";
+      presentBtn.textContent = "Set Present";
+      presentBtn.addEventListener("click", () => adminSetStatus(attendance._id, "present"));
+
+      const absentBtn = document.createElement("button");
+      absentBtn.className = "secondary";
+      absentBtn.textContent = "Set Absent";
+      absentBtn.addEventListener("click", () => adminSetStatus(attendance._id, "absent"));
+
+      actionRow.appendChild(presentBtn);
+      actionRow.appendChild(absentBtn);
+      item.appendChild(actionRow);
+      el.searchAttendance.appendChild(item);
+    });
   } catch (error) {
     showMessage(error.message, true);
   }
@@ -232,23 +324,33 @@ async function adminSetStatus(id, status) {
   }
 }
 
-window.adminSetStatus = adminSetStatus;
-
 async function loadPending() {
   try {
     const data = await api("/api/admin/requests?status=pending");
-    el.pendingRequests.innerHTML = data.requests
-      .map(
-        (r) => `<div class="item">
-          <strong>${r.user?.name || "Unknown"}</strong> | ${r.dateKey}<br />
-          ${r.message}
-          <div class="row wrap">
-            <button class="approve" onclick="reviewRequest('${r._id}','approve')">Yes</button>
-            <button class="danger" onclick="reviewRequest('${r._id}','reject')">No</button>
-          </div>
-        </div>`
-      )
-      .join("");
+    clearNode(el.pendingRequests);
+    data.requests.forEach((request) => {
+      const item = makeItem();
+      appendTextLine(item, `${request.user?.name || "Unknown"} | ${request.dateKey}`);
+      appendTextLine(item, request.message);
+
+      const actionRow = document.createElement("div");
+      actionRow.className = "row wrap";
+
+      const approveBtn = document.createElement("button");
+      approveBtn.className = "approve";
+      approveBtn.textContent = "Yes";
+      approveBtn.addEventListener("click", () => reviewRequest(request._id, "approve"));
+
+      const rejectBtn = document.createElement("button");
+      rejectBtn.className = "danger";
+      rejectBtn.textContent = "No";
+      rejectBtn.addEventListener("click", () => reviewRequest(request._id, "reject"));
+
+      actionRow.appendChild(approveBtn);
+      actionRow.appendChild(rejectBtn);
+      item.appendChild(actionRow);
+      el.pendingRequests.appendChild(item);
+    });
   } catch (error) {
     showMessage(error.message, true);
   }
@@ -267,18 +369,27 @@ async function reviewRequest(id, action) {
   }
 }
 
-window.reviewRequest = reviewRequest;
-
 el.loginTab.addEventListener("click", () => setTab("login"));
 el.registerTab.addEventListener("click", () => setTab("register"));
+el.registerRole.addEventListener("change", toggleAdminCodeField);
 el.loginForm.addEventListener("submit", onLogin);
 el.registerForm.addEventListener("submit", onRegister);
 el.logoutBtn.addEventListener("click", logout);
 
 el.markTodayBtn.addEventListener("click", async () => {
   try {
-    await markAttendance();
+    await markAttendance("present");
     showMessage("Attendance marked");
+    await loadStudentData();
+  } catch (error) {
+    showMessage(error.message, true);
+  }
+});
+
+el.markTodayAbsentBtn.addEventListener("click", async () => {
+  try {
+    await markAttendance("absent");
+    showMessage("Absent marked");
     await loadStudentData();
   } catch (error) {
     showMessage(error.message, true);
@@ -289,8 +400,20 @@ el.markDateBtn.addEventListener("click", async () => {
   try {
     const dateKey = el.markDateInput.value;
     if (!dateKey) return showMessage("Select date", true);
-    await markAttendance(dateKey);
+    await markAttendance("present", dateKey);
     showMessage(`Attendance marked for ${dateKey}`);
+    await loadStudentData();
+  } catch (error) {
+    showMessage(error.message, true);
+  }
+});
+
+el.markDateAbsentBtn.addEventListener("click", async () => {
+  try {
+    const dateKey = el.markDateInput.value;
+    if (!dateKey) return showMessage("Select date", true);
+    await markAttendance("absent", dateKey);
+    showMessage(`Absent marked for ${dateKey}`);
     await loadStudentData();
   } catch (error) {
     showMessage(error.message, true);
@@ -326,4 +449,5 @@ el.sendRequestBtn.addEventListener("click", async () => {
 el.searchBtn.addEventListener("click", searchAttendance);
 el.loadPendingBtn.addEventListener("click", loadPending);
 
+toggleAdminCodeField();
 initSession();

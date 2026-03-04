@@ -25,9 +25,20 @@ function publicUser(user) {
 
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role, adminCode } = req.body;
     if (!name || !email || !password) {
       return res.status(400).json({ message: "Name, email and password are required" });
+    }
+
+    const requestedRole = role === "admin" ? "admin" : "student";
+    if (requestedRole === "admin") {
+      const secretCode = process.env.ADMIN_REGISTRATION_CODE;
+      if (!secretCode) {
+        return res.status(500).json({ message: "Admin registration is not configured" });
+      }
+      if (!adminCode || adminCode !== secretCode) {
+        return res.status(403).json({ message: "Invalid admin registration code" });
+      }
     }
 
     const exists = await User.findOne({ email: email.toLowerCase().trim() });
@@ -39,7 +50,7 @@ router.post("/register", async (req, res) => {
       name: name.trim(),
       email: email.toLowerCase().trim(),
       password: password.trim(),
-      role: "student"
+      role: requestedRole
     });
 
     const token = signToken(user._id);
@@ -51,7 +62,7 @@ router.post("/register", async (req, res) => {
 
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
     if (!email || !password) {
       return res.status(400).json({ message: "Email and password are required" });
     }
@@ -64,6 +75,10 @@ router.post("/login", async (req, res) => {
     const ok = await user.comparePassword(password);
     if (!ok) {
       return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    if (role && role !== user.role) {
+      return res.status(403).json({ message: `This account is not a ${role}` });
     }
 
     const token = signToken(user._id);

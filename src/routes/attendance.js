@@ -26,16 +26,16 @@ router.get("/can-mark", requireRole("student"), async (req, res) => {
     }).sort({ dateKey: -1 })
   ]);
 
-  const approvedWithoutAttendance = [];
-  for (const request of approvedRequests) {
-    const exists = await Attendance.findOne({
-      user: req.user._id,
-      dateKey: request.dateKey
-    });
-    if (!exists) {
-      approvedWithoutAttendance.push(request.dateKey);
-    }
-  }
+  const approvedDateKeys = approvedRequests.map((request) => request.dateKey);
+  const existingForApproved = approvedDateKeys.length
+    ? await Attendance.find({
+        user: req.user._id,
+        dateKey: { $in: approvedDateKeys }
+      }).select("dateKey")
+    : [];
+
+  const existingSet = new Set(existingForApproved.map((item) => item.dateKey));
+  const approvedWithoutAttendance = approvedDateKeys.filter((dateKey) => !existingSet.has(dateKey));
 
   return res.json({
     canMarkToday: !todayAttendance,
@@ -48,6 +48,11 @@ router.post("/mark", requireRole("student"), async (req, res) => {
   try {
     const requestedDate = req.body.dateKey ? normalizeDateKey(req.body.dateKey) : todayKey();
     const currentDate = todayKey();
+    const requestedStatus = req.body.status || "present";
+
+    if (!["present", "absent"].includes(requestedStatus)) {
+      return res.status(400).json({ message: "Status must be present or absent" });
+    }
 
     const isToday = requestedDate === currentDate;
     if (!isToday) {
@@ -74,7 +79,7 @@ router.post("/mark", requireRole("student"), async (req, res) => {
     const attendance = await Attendance.create({
       user: req.user._id,
       dateKey: requestedDate,
-      status: "present",
+      status: requestedStatus,
       markedBy: "student",
       expireAt: toExpireAt(requestedDate)
     });

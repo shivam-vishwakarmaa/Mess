@@ -27,15 +27,30 @@
         </div>
 
         <form id="loginForm" class="form">
+          <select id="loginRole" required>
+            <option value="student">Login as User</option>
+            <option value="admin">Login as Admin</option>
+          </select>
           <input type="email" id="loginEmail" placeholder="Email" required />
           <input type="password" id="loginPassword" placeholder="Password" required />
           <button type="submit">Login</button>
         </form>
 
         <form id="registerForm" class="form hidden">
+          <select id="registerRole" required>
+            <option value="student">Create User Account</option>
+            <option value="admin">Create Admin Account</option>
+          </select>
           <input type="text" id="registerName" placeholder="Full Name" required />
           <input type="email" id="registerEmail" placeholder="Email" required />
           <input type="password" id="registerPassword" placeholder="Password (min 6)" required />
+          <input
+            type="password"
+            id="adminCode"
+            class="hidden"
+            placeholder="Admin Secret Code"
+            autocomplete="off"
+          />
           <button type="submit">Create Account</button>
         </form>
       </section>
@@ -50,11 +65,13 @@
         <div id="studentPanel" class="panel hidden">
           <div class="row wrap">
             <button id="markTodayBtn">Mark Today Present</button>
+            <button id="markTodayAbsentBtn" class="secondary">Mark Today Absent</button>
             <button id="refreshMeBtn" class="secondary">Refresh</button>
           </div>
           <div class="row wrap">
             <input id="markDateInput" type="date" />
             <button id="markDateBtn" class="secondary">Mark Selected Date</button>
+            <button id="markDateAbsentBtn" class="secondary">Mark Selected Date Absent</button>
           </div>
 
           <h3>Request Keep Empty</h3>
