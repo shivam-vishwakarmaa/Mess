@@ -173,6 +173,14 @@ button.ghost-btn {
   background: #fcfeff;
 }
 
+#searchSuggestions .item {
+  cursor: pointer;
+}
+
+#searchSuggestions .item:hover {
+  background: #eef8fd;
+}
+
 .hidden {
   display: none !important;
 }

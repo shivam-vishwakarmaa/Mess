@@ -2,6 +2,7 @@ const state = {
   token: localStorage.getItem("token") || "",
   user: null
 };
+let suggestionTimer = null;
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const STRONG_PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
@@ -33,6 +34,7 @@ const el = {
   myRequestList: document.getElementById("myRequestList"),
   searchName: document.getElementById("searchName"),
   searchBtn: document.getElementById("searchBtn"),
+  searchSuggestions: document.getElementById("searchSuggestions"),
   searchUsers: document.getElementById("searchUsers"),
   searchAttendance: document.getElementById("searchAttendance"),
   loadPendingBtn: document.getElementById("loadPendingBtn"),
@@ -271,6 +273,7 @@ async function initSession() {
 async function searchAttendance() {
   const name = el.searchName.value.trim();
   if (!name) return showMessage("Enter student name", true);
+  clearNode(el.searchSuggestions);
 
   try {
     const data = await api(`/api/admin/attendance/search?name=${encodeURIComponent(name)}`);
@@ -304,9 +307,17 @@ async function searchAttendance() {
         await adminCreateAttendance(user.id, "absent", dateInput.value);
       });
 
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "danger";
+      deleteBtn.textContent = "Delete User";
+      deleteBtn.addEventListener("click", async () => {
+        await adminDeleteUser(user.id, user.name);
+      });
+
       actionRow.appendChild(dateInput);
       actionRow.appendChild(presentBtn);
       actionRow.appendChild(absentBtn);
+      actionRow.appendChild(deleteBtn);
       item.appendChild(actionRow);
       el.searchUsers.appendChild(item);
     });
@@ -369,6 +380,45 @@ async function adminCreateAttendance(userId, status, dateKey) {
     });
     showMessage(`Marked ${status} successfully`);
     await searchAttendance();
+  } catch (error) {
+    showMessage(error.message, true);
+  }
+}
+
+async function adminDeleteUser(userId, userName) {
+  const ok = window.confirm(`Delete user "${userName}" and all their attendance data?`);
+  if (!ok) return;
+
+  try {
+    await api(`/api/admin/users/${userId}`, { method: "DELETE" });
+    showMessage("User deleted");
+    await searchAttendance();
+  } catch (error) {
+    showMessage(error.message, true);
+  }
+}
+
+async function loadUserSuggestions(query) {
+  const q = query.trim();
+  if (!q) {
+    clearNode(el.searchSuggestions);
+    return;
+  }
+
+  try {
+    const data = await api(`/api/admin/users/suggest?q=${encodeURIComponent(q)}`);
+    clearNode(el.searchSuggestions);
+
+    data.users.forEach((user) => {
+      const item = makeItem();
+      appendTextLine(item, `${user.name} (${user.email})`);
+      item.addEventListener("click", () => {
+        el.searchName.value = user.name;
+        clearNode(el.searchSuggestions);
+        searchAttendance();
+      });
+      el.searchSuggestions.appendChild(item);
+    });
   } catch (error) {
     showMessage(error.message, true);
   }
@@ -474,6 +524,14 @@ el.sendRequestBtn.addEventListener("click", async () => {
 });
 
 el.searchBtn.addEventListener("click", searchAttendance);
+el.searchName.addEventListener("input", () => {
+  if (suggestionTimer) {
+    clearTimeout(suggestionTimer);
+  }
+  suggestionTimer = setTimeout(() => {
+    loadUserSuggestions(el.searchName.value);
+  }, 180);
+});
 el.loadPendingBtn.addEventListener("click", loadPending);
 document.querySelectorAll(".password-toggle").forEach((button) => {
   button.addEventListener("click", () => togglePasswordVisibility(button));

@@ -9,6 +9,31 @@ const router = express.Router();
 
 router.use(protect, requireRole("admin"));
 
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+router.get("/users/suggest", async (req, res) => {
+  const q = (req.query.q || "").trim();
+  if (!q) return res.json({ users: [] });
+
+  const users = await User.find({
+    role: "student",
+    name: { $regex: `^${escapeRegex(q)}`, $options: "i" }
+  })
+    .sort({ name: 1 })
+    .limit(10)
+    .select("name email");
+
+  return res.json({
+    users: users.map((u) => ({
+      id: u._id,
+      name: u.name,
+      email: u.email
+    }))
+  });
+});
+
 router.get("/attendance/search", async (req, res) => {
   const q = (req.query.name || "").trim();
   if (!q) return res.status(400).json({ message: "Query name is required" });
@@ -34,6 +59,28 @@ router.get("/attendance/search", async (req, res) => {
     })),
     attendance
   });
+});
+
+router.delete("/users/:id", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if (user.role !== "student") {
+      return res.status(400).json({ message: "Only student accounts can be deleted" });
+    }
+
+    await Promise.all([
+      Attendance.deleteMany({ user: user._id }),
+      LeaveRequest.deleteMany({ user: user._id }),
+      User.deleteOne({ _id: user._id })
+    ]);
+
+    return res.json({ message: "User deleted successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
 });
 
 router.put("/attendance/:id", async (req, res) => {
