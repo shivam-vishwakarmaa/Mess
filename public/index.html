@@ -39,6 +39,18 @@
             </button>
           </div>
           <button type="submit">Login</button>
+          <button type="button" id="forgotToggleBtn" class="secondary">Forgot Password</button>
+        </form>
+
+        <form id="forgotForm" class="form hidden">
+          <input type="email" id="forgotEmail" placeholder="Your registered email" required />
+          <input
+            type="text"
+            id="forgotMessage"
+            placeholder="Optional message for admin"
+            maxlength="250"
+          />
+          <button type="submit">Send Reset Request</button>
         </form>
 
         <form id="registerForm" class="form hidden">
@@ -111,6 +123,10 @@
           <h3>Pending Empty Requests</h3>
           <button id="loadPendingBtn" class="secondary">Load Pending</button>
           <div id="pendingRequests" class="list"></div>
+
+          <h3>Password Reset Requests</h3>
+          <button id="loadResetRequestsBtn" class="secondary">Load Reset Requests</button>
+          <div id="resetRequests" class="list"></div>
         </div>
       </section>
 

@@ -13,6 +13,10 @@ const el = {
   loginTab: document.getElementById("loginTab"),
   registerTab: document.getElementById("registerTab"),
   loginForm: document.getElementById("loginForm"),
+  forgotForm: document.getElementById("forgotForm"),
+  forgotToggleBtn: document.getElementById("forgotToggleBtn"),
+  forgotEmail: document.getElementById("forgotEmail"),
+  forgotMessage: document.getElementById("forgotMessage"),
   loginRole: document.getElementById("loginRole"),
   registerForm: document.getElementById("registerForm"),
   registerRole: document.getElementById("registerRole"),
@@ -38,7 +42,9 @@ const el = {
   searchUsers: document.getElementById("searchUsers"),
   searchAttendance: document.getElementById("searchAttendance"),
   loadPendingBtn: document.getElementById("loadPendingBtn"),
-  pendingRequests: document.getElementById("pendingRequests")
+  pendingRequests: document.getElementById("pendingRequests"),
+  loadResetRequestsBtn: document.getElementById("loadResetRequestsBtn"),
+  resetRequests: document.getElementById("resetRequests")
 };
 
 function showMessage(text, isError = false) {
@@ -97,6 +103,7 @@ function setAuthUI(loggedIn) {
 function setTab(tab) {
   const login = tab === "login";
   el.loginForm.classList.toggle("hidden", !login);
+  el.forgotForm.classList.add("hidden");
   el.registerForm.classList.toggle("hidden", login);
   el.loginTab.classList.toggle("active", login);
   el.registerTab.classList.toggle("active", !login);
@@ -264,7 +271,10 @@ async function initSession() {
   try {
     await refreshMe();
     if (state.user.role === "student") await loadStudentData();
-    if (state.user.role === "admin") await loadPending();
+    if (state.user.role === "admin") {
+      await loadPending();
+      await loadPasswordResets();
+    }
   } catch (_error) {
     logout();
   }
@@ -456,6 +466,85 @@ async function loadPending() {
   }
 }
 
+async function loadPasswordResets() {
+  try {
+    const data = await api("/api/admin/password-resets");
+    clearNode(el.resetRequests);
+    data.requests.forEach((request) => {
+      const item = makeItem();
+      appendTextLine(
+        item,
+        `${request.user?.name || "Unknown"} (${request.email})`
+      );
+      appendTextLine(item, request.message || "No message");
+
+      const actionRow = document.createElement("div");
+      actionRow.className = "row wrap";
+
+      const passwordInput = document.createElement("input");
+      passwordInput.type = "text";
+      passwordInput.placeholder = "New password (for approve)";
+
+      const approveBtn = document.createElement("button");
+      approveBtn.className = "approve";
+      approveBtn.textContent = "Approve + Reset";
+      approveBtn.addEventListener("click", async () => {
+        await reviewPasswordReset(request._id, "approve", passwordInput.value);
+      });
+
+      const rejectBtn = document.createElement("button");
+      rejectBtn.className = "danger";
+      rejectBtn.textContent = "Reject";
+      rejectBtn.addEventListener("click", async () => {
+        await reviewPasswordReset(request._id, "reject", "");
+      });
+
+      actionRow.appendChild(passwordInput);
+      actionRow.appendChild(approveBtn);
+      actionRow.appendChild(rejectBtn);
+      item.appendChild(actionRow);
+      el.resetRequests.appendChild(item);
+    });
+  } catch (error) {
+    showMessage(error.message, true);
+  }
+}
+
+async function reviewPasswordReset(requestId, action, newPassword) {
+  try {
+    if (action === "approve" && !newPassword.trim()) {
+      return showMessage("Enter new password first", true);
+    }
+    await api(`/api/admin/password-resets/${requestId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ action, newPassword })
+    });
+    showMessage(`Password reset request ${action}d`);
+    await loadPasswordResets();
+  } catch (error) {
+    showMessage(error.message, true);
+  }
+}
+
+async function submitForgotPassword(e) {
+  e.preventDefault();
+  try {
+    const email = el.forgotEmail.value.trim();
+    const message = el.forgotMessage.value.trim();
+    if (!validEmail(email)) {
+      return showMessage("Please enter a valid email address", true);
+    }
+    const data = await api("/api/password-reset/request", {
+      method: "POST",
+      body: JSON.stringify({ email, message })
+    });
+    showMessage(data.message || "Reset request sent");
+    el.forgotForm.classList.add("hidden");
+  } catch (error) {
+    showMessage(error.message, true);
+  }
+}
+
 async function reviewRequest(id, action) {
   try {
     await api(`/api/admin/requests/${id}`, {
@@ -473,8 +562,12 @@ el.loginTab.addEventListener("click", () => setTab("login"));
 el.registerTab.addEventListener("click", () => setTab("register"));
 el.registerRole.addEventListener("change", toggleAdminCodeField);
 el.loginForm.addEventListener("submit", onLogin);
+el.forgotForm.addEventListener("submit", submitForgotPassword);
 el.registerForm.addEventListener("submit", onRegister);
 el.logoutBtn.addEventListener("click", logout);
+el.forgotToggleBtn.addEventListener("click", () => {
+  el.forgotForm.classList.toggle("hidden");
+});
 
 el.markTodayBtn.addEventListener("click", async () => {
   try {
@@ -533,6 +626,7 @@ el.searchName.addEventListener("input", () => {
   }, 180);
 });
 el.loadPendingBtn.addEventListener("click", loadPending);
+el.loadResetRequestsBtn.addEventListener("click", loadPasswordResets);
 document.querySelectorAll(".password-toggle").forEach((button) => {
   button.addEventListener("click", () => togglePasswordVisibility(button));
 });

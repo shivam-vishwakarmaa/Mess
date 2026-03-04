@@ -7,6 +7,7 @@ JWT-authenticated attendance app for students and admins, designed for 100+ user
 - Student registration/login with JWT
 - Admin registration protected by private `ADMIN_REGISTRATION_CODE`
 - Optional admin bootstrap user from `.env`
+- Free forgot-password flow via admin approval (no paid email needed)
 - Students mark attendance manually
 - Auto-mark `present` every day at `11:00 PM` (timezone from `TZ`) if not marked
 - Students can request admin to keep attendance empty for a date with a message
@@ -68,6 +69,7 @@ npm start
 - `POST /api/auth/register`
 - `POST /api/auth/login`
 - `GET /api/auth/me`
+- `POST /api/password-reset/request`
 - `GET /api/attendance/me`
 - `GET /api/attendance/can-mark`
 - `POST /api/attendance/mark`
@@ -78,6 +80,8 @@ npm start
 - `POST /api/admin/attendance` (admin)
 - `GET /api/admin/requests?status=pending` (admin)
 - `PATCH /api/admin/requests/:id` (admin)
+- `GET /api/admin/password-resets` (admin)
+- `PATCH /api/admin/password-resets/:id` (admin)
 
 ## Deployment
 

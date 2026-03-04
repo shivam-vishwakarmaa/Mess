@@ -8,6 +8,7 @@ const authRoutes = require("./routes/auth");
 const attendanceRoutes = require("./routes/attendance");
 const requestRoutes = require("./routes/requests");
 const adminRoutes = require("./routes/admin");
+const passwordResetRoutes = require("./routes/passwordReset");
 const { ensureDefaultAdmin } = require("./services/bootstrapAdmin");
 const { startScheduler } = require("./services/scheduler");
 
@@ -27,6 +28,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/requests", requestRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/password-reset", passwordResetRoutes);
 
 app.get("*", (_req, res) => {
   res.sendFile(path.join(__dirname, "..", "public", "index.html"));
