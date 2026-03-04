@@ -5,7 +5,6 @@ const state = {
 let suggestionTimer = null;
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const STRONG_PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
 
 const el = {
   authSection: document.getElementById("authSection"),
@@ -76,8 +75,8 @@ function validEmail(email) {
   return EMAIL_REGEX.test(email);
 }
 
-function validStrongPassword(password) {
-  return STRONG_PASSWORD_REGEX.test(password);
+function validPassword(password) {
+  return password.length >= 8;
 }
 
 async function api(path, options = {}) {
@@ -230,11 +229,8 @@ async function onRegister(e) {
     if (!validEmail(email)) {
       return showMessage("Please enter a valid email address", true);
     }
-    if (!validStrongPassword(password)) {
-      return showMessage(
-        "Password must be 8+ chars with upper, lower, number, and special character",
-        true
-      );
+    if (!validPassword(password)) {
+      return showMessage("Password must be at least 8 characters", true);
     }
     if (role === "admin" && !adminCode) {
       return showMessage("Admin secret code is required", true);
