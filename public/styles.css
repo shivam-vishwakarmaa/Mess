@@ -1,13 +1,13 @@
 :root {
-  --bg: #f6efe8;
-  --card: #fffaf4;
-  --ink: #2a2520;
-  --muted: #6f665e;
-  --accent: #d26542;
-  --accent-2: #274754;
-  --danger: #8f2d2d;
-  --ok: #1e7b4e;
-  --border: #e4d9cf;
+  --bg: #eef4f6;
+  --card: #ffffff;
+  --ink: #15222b;
+  --muted: #4a5f6e;
+  --accent: #0a7ea4;
+  --accent-2: #0f4f66;
+  --danger: #a12626;
+  --ok: #1f8c58;
+  --border: #d6e3ea;
 }
 
 * {
@@ -17,8 +17,8 @@
 body {
   margin: 0;
   font-family: "Space Grotesk", sans-serif;
-  background: radial-gradient(circle at 20% 20%, #ffe2b8 0%, transparent 40%),
-    radial-gradient(circle at 80% 15%, #bdd9d3 0%, transparent 30%), var(--bg);
+  background: radial-gradient(circle at 12% 15%, #b7e9ff 0%, transparent 34%),
+    radial-gradient(circle at 85% 12%, #d5e7ff 0%, transparent 28%), var(--bg);
   color: var(--ink);
   min-height: 100vh;
 }
@@ -43,17 +43,17 @@ body {
 
 .container {
   width: min(960px, 94vw);
-  margin: 24px auto 40px;
+  margin: 28px auto 44px;
   display: grid;
-  gap: 16px;
+  gap: 18px;
 }
 
 .card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 12px 28px rgba(16, 38, 56, 0.1);
   animation: fadeUp 0.5s ease both;
 }
 
@@ -92,15 +92,29 @@ h3 {
 
 .form {
   display: grid;
-  gap: 10px;
+  gap: 12px;
+}
+
+.password-wrap {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
 }
 
 input,
+select,
 button {
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px 12px;
+  border-radius: 12px;
+  padding: 11px 13px;
   font: inherit;
+}
+
+input:focus,
+select:focus {
+  outline: 2px solid #7ac6df;
+  border-color: #7ac6df;
 }
 
 button {
@@ -120,6 +134,12 @@ button.danger {
 
 button.approve {
   background: var(--ok);
+}
+
+button.ghost-btn {
+  background: #e9f2f7;
+  color: #14394a;
+  border: 1px solid #c9dde8;
 }
 
 .row {
@@ -142,15 +162,15 @@ button.approve {
 
 .list {
   display: grid;
-  gap: 8px;
+  gap: 10px;
   margin-top: 10px;
 }
 
 .item {
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px;
-  background: #fff;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fcfeff;
 }
 
 .hidden {

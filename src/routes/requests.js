@@ -1,7 +1,7 @@
 const express = require("express");
 const LeaveRequest = require("../models/LeaveRequest");
 const { protect, requireRole } = require("../middleware/auth");
-const { normalizeDateKey, todayKey, toExpireAt } = require("../utils/date");
+const { nowInTz, normalizeDateKey, todayKey, toExpireAt } = require("../utils/date");
 
 const router = express.Router();
 
@@ -11,9 +11,18 @@ router.post("/", requireRole("student"), async (req, res) => {
   try {
     const dateKey = req.body.dateKey ? normalizeDateKey(req.body.dateKey) : todayKey();
     const message = (req.body.message || "").trim();
+    const currentDate = todayKey();
+    const cutoffHour = 17;
+    const now = nowInTz();
 
     if (!message) {
       return res.status(400).json({ message: "Message is required" });
+    }
+    if (dateKey !== currentDate) {
+      return res.status(400).json({ message: "Request is allowed only for today" });
+    }
+    if (now.hour() >= cutoffHour) {
+      return res.status(400).json({ message: "Request time is closed after 5:00 PM" });
     }
 
     const existing = await LeaveRequest.findOne({ user: req.user._id, dateKey });

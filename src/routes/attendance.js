@@ -48,11 +48,6 @@ router.post("/mark", requireRole("student"), async (req, res) => {
   try {
     const requestedDate = req.body.dateKey ? normalizeDateKey(req.body.dateKey) : todayKey();
     const currentDate = todayKey();
-    const requestedStatus = req.body.status || "present";
-
-    if (!["present", "absent"].includes(requestedStatus)) {
-      return res.status(400).json({ message: "Status must be present or absent" });
-    }
 
     const isToday = requestedDate === currentDate;
     if (!isToday) {
@@ -79,7 +74,7 @@ router.post("/mark", requireRole("student"), async (req, res) => {
     const attendance = await Attendance.create({
       user: req.user._id,
       dateKey: requestedDate,
-      status: requestedStatus,
+      status: "present",
       markedBy: "student",
       expireAt: toExpireAt(requestedDate)
     });

@@ -15,6 +15,7 @@ const el = {
   loginRole: document.getElementById("loginRole"),
   registerForm: document.getElementById("registerForm"),
   registerRole: document.getElementById("registerRole"),
+  adminCodeWrap: document.getElementById("adminCodeWrap"),
   adminCode: document.getElementById("adminCode"),
   messageBox: document.getElementById("messageBox"),
   welcomeText: document.getElementById("welcomeText"),
@@ -23,13 +24,10 @@ const el = {
   studentPanel: document.getElementById("studentPanel"),
   adminPanel: document.getElementById("adminPanel"),
   markTodayBtn: document.getElementById("markTodayBtn"),
-  markTodayAbsentBtn: document.getElementById("markTodayAbsentBtn"),
   refreshMeBtn: document.getElementById("refreshMeBtn"),
   markDateInput: document.getElementById("markDateInput"),
   markDateBtn: document.getElementById("markDateBtn"),
-  markDateAbsentBtn: document.getElementById("markDateAbsentBtn"),
   myAttendanceList: document.getElementById("myAttendanceList"),
-  requestDate: document.getElementById("requestDate"),
   requestMsg: document.getElementById("requestMsg"),
   sendRequestBtn: document.getElementById("sendRequestBtn"),
   myRequestList: document.getElementById("myRequestList"),
@@ -104,8 +102,17 @@ function setTab(tab) {
 
 function toggleAdminCodeField() {
   const isAdminRegistration = el.registerRole.value === "admin";
-  el.adminCode.classList.toggle("hidden", !isAdminRegistration);
+  el.adminCodeWrap.classList.toggle("hidden", !isAdminRegistration);
   el.adminCode.required = isAdminRegistration;
+}
+
+function togglePasswordVisibility(button) {
+  const targetId = button.getAttribute("data-target");
+  const input = document.getElementById(targetId);
+  if (!input) return;
+  const show = input.type === "password";
+  input.type = show ? "text" : "password";
+  button.textContent = show ? "Hide" : "Show";
 }
 
 function logout() {
@@ -231,17 +238,18 @@ async function onRegister(e) {
     state.token = data.token;
     localStorage.setItem("token", state.token);
     await refreshMe();
-    await loadStudentData();
+    if (state.user.role === "student") await loadStudentData();
+    if (state.user.role === "admin") await loadPending();
     showMessage("Account created");
   } catch (error) {
     showMessage(error.message, true);
   }
 }
 
-async function markAttendance(status, dateKey) {
+async function markAttendance(dateKey) {
   await api("/api/attendance/mark", {
     method: "POST",
-    body: JSON.stringify(dateKey ? { dateKey, status } : { status })
+    body: JSON.stringify(dateKey ? { dateKey } : {})
   });
 }
 
@@ -275,6 +283,31 @@ async function searchAttendance() {
         item,
         `Joined: ${formatDate(user.joiningDate)} | Days left: ${user.daysLeftFor30}`
       );
+
+      const actionRow = document.createElement("div");
+      actionRow.className = "row wrap";
+
+      const dateInput = document.createElement("input");
+      dateInput.type = "date";
+
+      const presentBtn = document.createElement("button");
+      presentBtn.className = "approve";
+      presentBtn.textContent = "Mark Present";
+      presentBtn.addEventListener("click", async () => {
+        await adminCreateAttendance(user.id, "present", dateInput.value);
+      });
+
+      const absentBtn = document.createElement("button");
+      absentBtn.className = "danger";
+      absentBtn.textContent = "Mark Absent";
+      absentBtn.addEventListener("click", async () => {
+        await adminCreateAttendance(user.id, "absent", dateInput.value);
+      });
+
+      actionRow.appendChild(dateInput);
+      actionRow.appendChild(presentBtn);
+      actionRow.appendChild(absentBtn);
+      item.appendChild(actionRow);
       el.searchUsers.appendChild(item);
     });
 
@@ -318,6 +351,23 @@ async function adminSetStatus(id, status) {
       body: JSON.stringify({ status })
     });
     showMessage("Attendance updated");
+    await searchAttendance();
+  } catch (error) {
+    showMessage(error.message, true);
+  }
+}
+
+async function adminCreateAttendance(userId, status, dateKey) {
+  try {
+    if (!dateKey) {
+      showMessage("Select a date first", true);
+      return;
+    }
+    await api("/api/admin/attendance", {
+      method: "POST",
+      body: JSON.stringify({ userId, dateKey, status })
+    });
+    showMessage(`Marked ${status} successfully`);
     await searchAttendance();
   } catch (error) {
     showMessage(error.message, true);
@@ -378,18 +428,8 @@ el.logoutBtn.addEventListener("click", logout);
 
 el.markTodayBtn.addEventListener("click", async () => {
   try {
-    await markAttendance("present");
+    await markAttendance();
     showMessage("Attendance marked");
-    await loadStudentData();
-  } catch (error) {
-    showMessage(error.message, true);
-  }
-});
-
-el.markTodayAbsentBtn.addEventListener("click", async () => {
-  try {
-    await markAttendance("absent");
-    showMessage("Absent marked");
     await loadStudentData();
   } catch (error) {
     showMessage(error.message, true);
@@ -400,20 +440,8 @@ el.markDateBtn.addEventListener("click", async () => {
   try {
     const dateKey = el.markDateInput.value;
     if (!dateKey) return showMessage("Select date", true);
-    await markAttendance("present", dateKey);
+    await markAttendance(dateKey);
     showMessage(`Attendance marked for ${dateKey}`);
-    await loadStudentData();
-  } catch (error) {
-    showMessage(error.message, true);
-  }
-});
-
-el.markDateAbsentBtn.addEventListener("click", async () => {
-  try {
-    const dateKey = el.markDateInput.value;
-    if (!dateKey) return showMessage("Select date", true);
-    await markAttendance("absent", dateKey);
-    showMessage(`Absent marked for ${dateKey}`);
     await loadStudentData();
   } catch (error) {
     showMessage(error.message, true);
@@ -432,12 +460,11 @@ el.refreshMeBtn.addEventListener("click", async () => {
 
 el.sendRequestBtn.addEventListener("click", async () => {
   try {
-    const dateKey = el.requestDate.value;
     const message = el.requestMsg.value.trim();
     if (!message) return showMessage("Enter message", true);
     await api("/api/requests", {
       method: "POST",
-      body: JSON.stringify(dateKey ? { dateKey, message } : { message })
+      body: JSON.stringify({ message })
     });
     showMessage("Request sent");
     await loadStudentData();
@@ -448,6 +475,9 @@ el.sendRequestBtn.addEventListener("click", async () => {
 
 el.searchBtn.addEventListener("click", searchAttendance);
 el.loadPendingBtn.addEventListener("click", loadPending);
+document.querySelectorAll(".password-toggle").forEach((button) => {
+  button.addEventListener("click", () => togglePasswordVisibility(button));
+});
 
 toggleAdminCodeField();
 initSession();
