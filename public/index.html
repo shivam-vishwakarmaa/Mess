@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mess Attendance</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Sora:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="ambient"></div>
+    <main class="container">
+      <section class="hero card">
+        <h1>Mess Attendance</h1>
+        <p>Quick attendance system for students and admins.</p>
+      </section>
+
+      <section id="authSection" class="card">
+        <div class="tabs">
+          <button id="loginTab" class="tab active">Login</button>
+          <button id="registerTab" class="tab">Register</button>
+        </div>
+
+        <form id="loginForm" class="form">
+          <input type="email" id="loginEmail" placeholder="Email" required />
+          <input type="password" id="loginPassword" placeholder="Password" required />
+          <button type="submit">Login</button>
+        </form>
+
+        <form id="registerForm" class="form hidden">
+          <input type="text" id="registerName" placeholder="Full Name" required />
+          <input type="email" id="registerEmail" placeholder="Email" required />
+          <input type="password" id="registerPassword" placeholder="Password (min 6)" required />
+          <button type="submit">Create Account</button>
+        </form>
+      </section>
+
+      <section id="appSection" class="card hidden">
+        <div class="row between">
+          <h2 id="welcomeText">Welcome</h2>
+          <button id="logoutBtn" class="danger">Logout</button>
+        </div>
+        <p id="metaText" class="muted"></p>
+
+        <div id="studentPanel" class="panel hidden">
+          <div class="row wrap">
+            <button id="markTodayBtn">Mark Today Present</button>
+            <button id="refreshMeBtn" class="secondary">Refresh</button>
+          </div>
+          <div class="row wrap">
+            <input id="markDateInput" type="date" />
+            <button id="markDateBtn" class="secondary">Mark Selected Date</button>
+          </div>
+
+          <h3>Request Keep Empty</h3>
+          <div class="row wrap">
+            <input id="requestDate" type="date" />
+            <input id="requestMsg" type="text" placeholder="Small message to admin" maxlength="250" />
+            <button id="sendRequestBtn">Send Request</button>
+          </div>
+
+          <h3>My Attendance (Last 40)</h3>
+          <div id="myAttendanceList" class="list"></div>
+
+          <h3>My Requests</h3>
+          <div id="myRequestList" class="list"></div>
+        </div>
+
+        <div id="adminPanel" class="panel hidden">
+          <h3>Search Student Attendance</h3>
+          <div class="row wrap">
+            <input id="searchName" type="text" placeholder="Student name" />
+            <button id="searchBtn">Search</button>
+          </div>
+          <div id="searchUsers" class="list"></div>
+          <div id="searchAttendance" class="list"></div>
+
+          <h3>Pending Empty Requests</h3>
+          <button id="loadPendingBtn" class="secondary">Load Pending</button>
+          <div id="pendingRequests" class="list"></div>
+        </div>
+      </section>
+
+      <section id="messageBox" class="message"></section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
