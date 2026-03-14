@@ -1,5 +1,4 @@
 const express = require("express");
-const Attendance = require("../models/Attendance");
 const LeaveRequest = require("../models/LeaveRequest");
 const PasswordResetRequest = require("../models/PasswordResetRequest");
 const User = require("../models/User");
@@ -32,21 +31,28 @@ router.get("/export/today", async (req, res) => {
     // Fetch all students
     const students = await User.find({ role: "student" }).sort({ name: 1 });
     
-    // Fetch today's attendance
-    const attendance = await Attendance.find({ dateKey }).populate("user", "name email username");
-    const attMap = new Map();
-    attendance.forEach(a => {
-      if(a.user) attMap.set(a.user._id.toString(), a);
-    });
+    // Calculate stats for each student
+    const studentData = await Promise.all(students.map(async (student) => {
+      const approvedLeaves = await LeaveRequest.countDocuments({
+        user: student._id,
+        status: "approved"
+      });
+      const daysPassed = daysSince(student.joiningDate);
+      const daysLeft = Math.max(0, 30 - daysPassed + approvedLeaves);
+      return {
+        name: student.name,
+        username: student.username || "-",
+        email: student.email,
+        joined: student.joiningDate ? new Date(student.joiningDate).toLocaleDateString() : "-",
+        approvedLeaves,
+        daysLeft
+      };
+    }));
 
-    let csvContent = "Name,Username,Email,Status,Marked By\n";
+    let csvContent = "Name,Username,Email,Joined Date,Total Approved Leaves,Days Left (of 30)\n";
     
-    students.forEach(student => {
-      const att = attMap.get(student._id.toString());
-      const status = att ? att.status : "absent (unmarked)";
-      const markedBy = att ? att.markedBy : "none";
-      const username = student.username || "-";
-      csvContent += `"${student.name}","${username}","${student.email}","${status}","${markedBy}"\n`;
+    studentData.forEach(s => {
+      csvContent += `"${s.name}","${s.username}","${s.email}","${s.joined}","${s.approvedLeaves}","${s.daysLeft}"\n`;
     });
 
     res.setHeader("Content-Type", "text/csv");
@@ -94,22 +100,24 @@ router.get("/attendance/search", async (req, res) => {
     ]
   }).select("name username email joiningDate");
 
-  const userIds = users.map((u) => u._id);
-  const attendance = await Attendance.find({ user: { $in: userIds } })
-    .sort({ dateKey: -1 })
-    .limit(500)
-    .populate("user", "name email joiningDate");
-
-  return res.json({
-    users: users.map((u) => ({
+  const usersWithStats = await Promise.all(users.map(async (u) => {
+    const approvedLeaves = await LeaveRequest.countDocuments({
+      user: u._id,
+      status: "approved"
+    });
+    const daysLeft = Math.max(0, 30 - daysSince(u.joiningDate) + approvedLeaves);
+    return {
       id: u._id,
       name: u.name,
       username: u.username,
       email: u.email,
       joiningDate: u.joiningDate,
-      daysLeftFor30: Math.max(0, 30 - daysSince(u.joiningDate))
-    })),
-    attendance
+      daysLeftFor30: daysLeft
+    };
+  }));
+
+  return res.json({
+    users: usersWithStats
   });
 });
 
@@ -149,7 +157,6 @@ router.delete("/users/:id", async (req, res) => {
     }
 
     await Promise.all([
-      Attendance.deleteMany({ user: user._id }),
       LeaveRequest.deleteMany({ user: user._id }),
       PasswordResetRequest.deleteMany({ user: user._id }),
       User.deleteOne({ _id: user._id })
@@ -161,36 +168,7 @@ router.delete("/users/:id", async (req, res) => {
   }
 });
 
-router.put("/attendance/:id", async (req, res) => {
-  const { status, dateKey } = req.body;
-  const updates = {};
 
-  if (status) {
-    if (!["present", "absent"].includes(status)) {
-      return res.status(400).json({ message: "Status must be present or absent" });
-    }
-    updates.status = status;
-  }
-
-  if (dateKey) {
-    const normalized = normalizeDateKey(dateKey);
-    updates.dateKey = normalized;
-    updates.expireAt = toExpireAt(normalized);
-  }
-
-  updates.markedBy = "admin";
-
-  try {
-    const updated = await Attendance.findByIdAndUpdate(req.params.id, updates, {
-      new: true,
-      runValidators: true
-    });
-    if (!updated) return res.status(404).json({ message: "Attendance not found" });
-    return res.json({ attendance: updated });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-});
 
 router.get("/requests", async (req, res) => {
   const status = req.query.status || "pending";
@@ -263,33 +241,6 @@ router.patch("/requests/:id", async (req, res) => {
   return res.json({ request });
 });
 
-router.post("/attendance", async (req, res) => {
-  try {
-    const { userId, dateKey, status } = req.body;
-    if (!userId || !dateKey || !status) {
-      return res.status(400).json({ message: "userId, dateKey and status are required" });
-    }
-    if (!["present", "absent"].includes(status)) {
-      return res.status(400).json({ message: "Invalid status" });
-    }
 
-    const normalized = normalizeDateKey(dateKey);
-    const attendance = await Attendance.findOneAndUpdate(
-      { user: userId, dateKey: normalized },
-      {
-        user: userId,
-        dateKey: normalized,
-        status,
-        markedBy: "admin",
-        expireAt: toExpireAt(normalized)
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
-
-    return res.status(201).json({ attendance });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-});
 
 module.exports = router;

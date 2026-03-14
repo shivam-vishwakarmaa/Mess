@@ -89,12 +89,7 @@
 
         <div id="studentPanel" class="panel hidden">
           <div class="row wrap">
-            <button id="markTodayBtn">Mark Today Present</button>
             <button id="refreshMeBtn" class="secondary">Refresh</button>
-          </div>
-          <div class="row wrap">
-            <input id="markDateInput" type="date" />
-            <button id="markDateBtn" class="secondary">Mark Selected Date</button>
           </div>
 
           <h3>Request Keep Empty</h3>
@@ -104,8 +99,7 @@
             <button id="sendRequestBtn">Send Request</button>
           </div>
 
-          <h3>My Attendance (Last 40)</h3>
-          <div id="myAttendanceList" class="list"></div>
+        </div>
 
           <h3>My Requests</h3>
           <div id="myRequestList" class="list"></div>
@@ -117,17 +111,13 @@
             Export Today's Attendance (CSV)
           </button>
           
-          <h3>Search Student Attendance</h3>
+          <h3>Search Students</h3>
           <div class="row wrap">
             <input id="searchName" type="text" placeholder="Student name" />
             <button id="searchBtn">Search</button>
           </div>
           <div id="searchSuggestions" class="list"></div>
-          <p class="muted">
-            Use search results below to mark any student as present/absent for a selected date.
-          </p>
           <div id="searchUsers" class="list"></div>
-          <div id="searchAttendance" class="list"></div>
 
           <h3>Pending Empty Requests</h3>
           <button id="loadPendingBtn" class="secondary">Load Pending</button>

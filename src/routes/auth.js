@@ -1,6 +1,7 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const LeaveRequest = require("../models/LeaveRequest");
 const { protect } = require("../middleware/auth");
 const { daysSince } = require("../utils/date");
 
@@ -12,7 +13,19 @@ function signToken(userId) {
   });
 }
 
-function publicUser(user) {
+async function publicUser(user) {
+  let approvedLeaves = 0;
+  if (user.role === "student") {
+    approvedLeaves = await LeaveRequest.countDocuments({
+      user: user._id,
+      status: "approved"
+    });
+  }
+
+  const daysPassed = daysSince(user.joiningDate);
+  // Formula: 30 - daysPassed + approvedLeaves
+  const daysLeft = Math.max(0, 30 - daysPassed + approvedLeaves);
+
   return {
     id: user._id,
     name: user.name,
@@ -20,7 +33,7 @@ function publicUser(user) {
     email: user.email,
     role: user.role,
     joiningDate: user.joiningDate,
-    daysLeftFor30: Math.max(0, 30 - daysSince(user.joiningDate))
+    daysLeftFor30: daysLeft
   };
 }
 
@@ -61,7 +74,8 @@ router.post("/register", async (req, res) => {
     });
 
     const token = signToken(user._id);
-    return res.status(201).json({ token, user: publicUser(user) });
+    const pUser = await publicUser(user);
+    return res.status(201).json({ token, user: pUser });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -93,14 +107,16 @@ router.post("/login", async (req, res) => {
     }
 
     const token = signToken(user._id);
-    return res.json({ token, user: publicUser(user) });
+    const pUser = await publicUser(user);
+    return res.json({ token, user: pUser });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
 });
 
 router.get("/me", protect, async (req, res) => {
-  return res.json({ user: publicUser(req.user) });
+  const pUser = await publicUser(req.user);
+  return res.json({ user: pUser });
 });
 
 module.exports = router;

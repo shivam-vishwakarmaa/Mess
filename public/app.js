@@ -28,11 +28,7 @@ const el = {
   logoutBtn: document.getElementById("logoutBtn"),
   studentPanel: document.getElementById("studentPanel"),
   adminPanel: document.getElementById("adminPanel"),
-  markTodayBtn: document.getElementById("markTodayBtn"),
   refreshMeBtn: document.getElementById("refreshMeBtn"),
-  markDateInput: document.getElementById("markDateInput"),
-  markDateBtn: document.getElementById("markDateBtn"),
-  myAttendanceList: document.getElementById("myAttendanceList"),
   requestMsg: document.getElementById("requestMsg"),
   sendRequestBtn: document.getElementById("sendRequestBtn"),
   myRequestList: document.getElementById("myRequestList"),
@@ -40,12 +36,7 @@ const el = {
   searchBtn: document.getElementById("searchBtn"),
   searchSuggestions: document.getElementById("searchSuggestions"),
   searchUsers: document.getElementById("searchUsers"),
-  searchAttendance: document.getElementById("searchAttendance"),
   loadPendingBtn: document.getElementById("loadPendingBtn"),
-  pendingRequests: document.getElementById("pendingRequests"),
-  loadPendingBtn: document.getElementById("loadPendingBtn"),
-  pendingRequests: document.getElementById("pendingRequests"),
-  loadResetRequestsBtn: document.getElementById("loadResetRequestsBtn"),
   resetRequests: document.getElementById("resetRequests"),
   themeToggle: document.getElementById("themeToggle"),
   exportCsvBtn: document.getElementById("exportCsvBtn")
@@ -188,21 +179,9 @@ async function refreshMe() {
 }
 
 async function loadStudentData() {
-  const [attendanceRes, requestsRes, markRes] = await Promise.all([
-    api("/api/attendance/me"),
-    api("/api/requests/me"),
-    api("/api/attendance/can-mark")
+  const [requestsRes] = await Promise.all([
+    api("/api/requests/me")
   ]);
-
-  clearNode(el.myAttendanceList);
-  attendanceRes.attendance.forEach((attendance) => {
-    const item = makeItem();
-    appendTextLine(
-      item,
-      `${attendance.dateKey} | ${attendance.status} | by ${attendance.markedBy}`
-    );
-    el.myAttendanceList.appendChild(item);
-  });
 
   clearNode(el.myRequestList);
   requestsRes.requests.forEach((request) => {
@@ -211,12 +190,6 @@ async function loadStudentData() {
     appendTextLine(item, request.message);
     el.myRequestList.appendChild(item);
   });
-
-  if (markRes.approvedDateKeysOpen.length) {
-    showMessage(
-      `You can mark approved date(s): ${markRes.approvedDateKeysOpen.join(", ")}`
-    );
-  }
 }
 
 async function onLogin(e) {
@@ -300,12 +273,7 @@ async function onRegister(e) {
   }
 }
 
-async function markAttendance(dateKey) {
-  await api("/api/attendance/mark", {
-    method: "POST",
-    body: JSON.stringify(dateKey ? { dateKey } : {})
-  });
-}
+
 
 async function initSession() {
   if (!state.token) {
@@ -331,7 +299,7 @@ async function searchAttendance() {
   clearNode(el.searchSuggestions);
 
   try {
-    const data = await api(`/api/admin/attendance/search?name=${encodeURIComponent(name)}`);
+    const data = await api(`/api/admin/users/search?name=${encodeURIComponent(name)}`);
 
     clearNode(el.searchUsers);
     data.users.forEach((user) => {
@@ -356,23 +324,6 @@ async function searchAttendance() {
         await adminChangePassword(user.id, pwdInput.value);
       });
 
-      const dateInput = document.createElement("input");
-      dateInput.type = "date";
-
-      const presentBtn = document.createElement("button");
-      presentBtn.className = "approve";
-      presentBtn.textContent = "Mark Present";
-      presentBtn.addEventListener("click", async () => {
-        await adminCreateAttendance(user.id, "present", dateInput.value);
-      });
-
-      const absentBtn = document.createElement("button");
-      absentBtn.className = "danger";
-      absentBtn.textContent = "Mark Absent";
-      absentBtn.addEventListener("click", async () => {
-        await adminCreateAttendance(user.id, "absent", dateInput.value);
-      });
-
       const deleteBtn = document.createElement("button");
       deleteBtn.className = "danger";
       deleteBtn.textContent = "Delete User";
@@ -382,41 +333,9 @@ async function searchAttendance() {
 
       actionRow.appendChild(pwdInput);
       actionRow.appendChild(changePwdBtn);
-      actionRow.appendChild(dateInput);
-      actionRow.appendChild(presentBtn);
-      actionRow.appendChild(absentBtn);
       actionRow.appendChild(deleteBtn);
       item.appendChild(actionRow);
       el.searchUsers.appendChild(item);
-    });
-
-    clearNode(el.searchAttendance);
-    data.attendance.forEach((attendance) => {
-      const item = makeItem();
-      appendTextLine(
-        item,
-        `${attendance.user?.name || "Unknown"} | ${attendance.dateKey} | ${attendance.status} | ${
-          attendance.markedBy
-        }`
-      );
-
-      const actionRow = document.createElement("div");
-      actionRow.className = "row wrap";
-
-      const presentBtn = document.createElement("button");
-      presentBtn.className = "secondary";
-      presentBtn.textContent = "Set Present";
-      presentBtn.addEventListener("click", () => adminSetStatus(attendance._id, "present"));
-
-      const absentBtn = document.createElement("button");
-      absentBtn.className = "secondary";
-      absentBtn.textContent = "Set Absent";
-      absentBtn.addEventListener("click", () => adminSetStatus(attendance._id, "absent"));
-
-      actionRow.appendChild(presentBtn);
-      actionRow.appendChild(absentBtn);
-      item.appendChild(actionRow);
-      el.searchAttendance.appendChild(item);
     });
   } catch (error) {
     showMessage(error.message, true);
@@ -438,35 +357,7 @@ async function adminChangePassword(userId, newPassword) {
   }
 }
 
-async function adminSetStatus(id, status) {
-  try {
-    await api(`/api/admin/attendance/${id}`, {
-      method: "PUT",
-      body: JSON.stringify({ status })
-    });
-    showMessage("Attendance updated");
-    await searchAttendance();
-  } catch (error) {
-    showMessage(error.message, true);
-  }
-}
 
-async function adminCreateAttendance(userId, status, dateKey) {
-  try {
-    if (!dateKey) {
-      showMessage("Select a date first", true);
-      return;
-    }
-    await api("/api/admin/attendance", {
-      method: "POST",
-      body: JSON.stringify({ userId, dateKey, status })
-    });
-    showMessage(`Marked ${status} successfully`);
-    await searchAttendance();
-  } catch (error) {
-    showMessage(error.message, true);
-  }
-}
 
 async function adminDeleteUser(userId, userName) {
   const ok = window.confirm(`Delete user "${userName}" and all their attendance data?`);
@@ -649,27 +540,7 @@ if (el.exportCsvBtn) {
   });
 }
 
-el.markTodayBtn.addEventListener("click", async () => {
-  try {
-    await markAttendance();
-    showMessage("Attendance marked");
-    await loadStudentData();
-  } catch (error) {
-    showMessage(error.message, true);
-  }
-});
 
-el.markDateBtn.addEventListener("click", async () => {
-  try {
-    const dateKey = el.markDateInput.value;
-    if (!dateKey) return showMessage("Select date", true);
-    await markAttendance(dateKey);
-    showMessage(`Attendance marked for ${dateKey}`);
-    await loadStudentData();
-  } catch (error) {
-    showMessage(error.message, true);
-  }
-});
 
 el.refreshMeBtn.addEventListener("click", async () => {
   try {
