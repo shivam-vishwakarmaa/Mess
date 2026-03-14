@@ -11,6 +11,11 @@ function todayKey() {
   return dayjs().tz(APP_TZ).format("YYYY-MM-DD");
 }
 
+/** Returns the date key for `n` days from today (default: 1 = tomorrow). */
+function tomorrowKey(n = 1) {
+  return dayjs().tz(APP_TZ).add(n, "day").format("YYYY-MM-DD");
+}
+
 function nowInTz() {
   return dayjs().tz(APP_TZ);
 }
@@ -37,5 +42,6 @@ module.exports = {
   normalizeDateKey,
   nowInTz,
   toExpireAt,
-  todayKey
+  todayKey,
+  tomorrowKey
 };

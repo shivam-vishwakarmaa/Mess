@@ -42,6 +42,9 @@ const leaveRequestSchema = new mongoose.Schema(
 
 leaveRequestSchema.index({ user: 1, dateKey: 1 }, { unique: true });
 leaveRequestSchema.index({ expireAt: 1 }, { expireAfterSeconds: 0 });
+// Performance indexes for admin dashboard queries
+leaveRequestSchema.index({ status: 1, dateKey: 1 });
+leaveRequestSchema.index({ dateKey: 1 });
 
 leaveRequestSchema.pre("validate", function setExpire(next) {
   if (!this.expireAt && this.dateKey) {
