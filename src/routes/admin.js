@@ -20,7 +20,10 @@ router.get("/users/suggest", async (req, res) => {
 
   const users = await User.find({
     role: "student",
-    name: { $regex: `^${escapeRegex(q)}`, $options: "i" }
+    $or: [
+      { name: { $regex: `^${escapeRegex(q)}`, $options: "i" } },
+      { username: { $regex: `^${escapeRegex(q)}`, $options: "i" } }
+    ]
   })
     .sort({ name: 1 })
     .limit(10)
@@ -30,6 +33,7 @@ router.get("/users/suggest", async (req, res) => {
     users: users.map((u) => ({
       id: u._id,
       name: u.name,
+      username: u.username,
       email: u.email
     }))
   });
@@ -41,8 +45,11 @@ router.get("/attendance/search", async (req, res) => {
 
   const users = await User.find({
     role: "student",
-    name: { $regex: q, $options: "i" }
-  }).select("name email joiningDate");
+    $or: [
+      { name: { $regex: q, $options: "i" } },
+      { username: { $regex: q, $options: "i" } }
+    ]
+  }).select("name username email joiningDate");
 
   const userIds = users.map((u) => u._id);
   const attendance = await Attendance.find({ user: { $in: userIds } })
@@ -54,12 +61,38 @@ router.get("/attendance/search", async (req, res) => {
     users: users.map((u) => ({
       id: u._id,
       name: u.name,
+      username: u.username,
       email: u.email,
       joiningDate: u.joiningDate,
       daysLeftFor30: Math.max(0, 30 - daysSince(u.joiningDate))
     })),
     attendance
   });
+});
+
+router.put("/users/:id/password", async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({ message: "Password must be at least 8 characters" });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    if (user.role !== "student") {
+      return res.status(400).json({ message: "Can only change student passwords" });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    return res.json({ message: "Password updated successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
 });
 
 router.delete("/users/:id", async (req, res) => {

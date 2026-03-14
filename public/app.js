@@ -190,11 +190,11 @@ async function onLogin(e) {
   e.preventDefault();
   try {
     const role = el.loginRole.value;
-    const email = document.getElementById("loginEmail").value.trim();
+    const identifier = document.getElementById("loginEmail").value.trim();
     const password = document.getElementById("loginPassword").value.trim();
 
-    if (!validEmail(email)) {
-      return showMessage("Please enter a valid email address", true);
+    if (!identifier) {
+      return showMessage("Username or Email is required", true);
     }
     if (!password) {
       return showMessage("Password is required", true);
@@ -202,7 +202,7 @@ async function onLogin(e) {
 
     const data = await api("/api/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password, role })
+      body: JSON.stringify({ identifier, password, role })
     });
     state.token = data.token;
     localStorage.setItem("token", state.token);
@@ -219,12 +219,16 @@ async function onRegister(e) {
   try {
     const role = el.registerRole.value;
     const name = document.getElementById("registerName").value.trim();
+    const username = document.getElementById("registerUsername").value.trim();
     const email = document.getElementById("registerEmail").value.trim();
     const password = document.getElementById("registerPassword").value.trim();
     const adminCode = el.adminCode.value.trim();
 
     if (!name || name.length < 2) {
       return showMessage("Name must be at least 2 characters", true);
+    }
+    if (!username || username.length < 3) {
+      return showMessage("Username must be at least 3 characters", true);
     }
     if (!validEmail(email)) {
       return showMessage("Please enter a valid email address", true);
@@ -238,7 +242,7 @@ async function onRegister(e) {
 
     const data = await api("/api/auth/register", {
       method: "POST",
-      body: JSON.stringify({ name, email, password, role, adminCode })
+      body: JSON.stringify({ name, username, email, password, role, adminCode })
     });
     state.token = data.token;
     localStorage.setItem("token", state.token);
@@ -296,6 +300,17 @@ async function searchAttendance() {
       const actionRow = document.createElement("div");
       actionRow.className = "row wrap";
 
+      const pwdInput = document.createElement("input");
+      pwdInput.type = "text";
+      pwdInput.placeholder = "New Password";
+
+      const changePwdBtn = document.createElement("button");
+      changePwdBtn.className = "secondary";
+      changePwdBtn.textContent = "Change Password";
+      changePwdBtn.addEventListener("click", async () => {
+        await adminChangePassword(user.id, pwdInput.value);
+      });
+
       const dateInput = document.createElement("input");
       dateInput.type = "date";
 
@@ -320,6 +335,8 @@ async function searchAttendance() {
         await adminDeleteUser(user.id, user.name);
       });
 
+      actionRow.appendChild(pwdInput);
+      actionRow.appendChild(changePwdBtn);
       actionRow.appendChild(dateInput);
       actionRow.appendChild(presentBtn);
       actionRow.appendChild(absentBtn);
@@ -356,6 +373,21 @@ async function searchAttendance() {
       item.appendChild(actionRow);
       el.searchAttendance.appendChild(item);
     });
+  } catch (error) {
+    showMessage(error.message, true);
+  }
+}
+
+async function adminChangePassword(userId, newPassword) {
+  if (!newPassword || newPassword.length < 8) {
+    return showMessage("Password must be at least 8 characters", true);
+  }
+  try {
+    const data = await api(`/api/admin/users/${userId}/password`, {
+      method: "PUT",
+      body: JSON.stringify({ newPassword })
+    });
+    showMessage(data.message || "Password changed");
   } catch (error) {
     showMessage(error.message, true);
   }

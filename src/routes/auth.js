@@ -16,6 +16,7 @@ function publicUser(user) {
   return {
     id: user._id,
     name: user.name,
+    username: user.username,
     email: user.email,
     role: user.role,
     joiningDate: user.joiningDate,
@@ -25,9 +26,9 @@ function publicUser(user) {
 
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password, role, adminCode } = req.body;
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: "Name, email and password are required" });
+    const { name, username, email, password, role, adminCode } = req.body;
+    if (!name || !username || !email || !password) {
+      return res.status(400).json({ message: "Name, username, email and password are required" });
     }
 
     const requestedRole = role === "admin" ? "admin" : "student";
@@ -41,13 +42,19 @@ router.post("/register", async (req, res) => {
       }
     }
 
-    const exists = await User.findOne({ email: email.toLowerCase().trim() });
-    if (exists) {
+    const existsEmail = await User.findOne({ email: email.toLowerCase().trim() });
+    if (existsEmail) {
       return res.status(409).json({ message: "Email already registered" });
+    }
+
+    const existsUsername = await User.findOne({ username: username.toLowerCase().trim() });
+    if (existsUsername) {
+      return res.status(409).json({ message: "Username already taken" });
     }
 
     const user = await User.create({
       name: name.trim(),
+      username: username.toLowerCase().trim(),
       email: email.toLowerCase().trim(),
       password: password.trim(),
       role: requestedRole
@@ -62,12 +69,16 @@ router.post("/register", async (req, res) => {
 
 router.post("/login", async (req, res) => {
   try {
-    const { email, password, role } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required" });
+    const { identifier, password, role } = req.body;
+    if (!identifier || !password) {
+      return res.status(400).json({ message: "Username/Email and password are required" });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    const searchIdentifier = identifier.toLowerCase().trim();
+    const user = await User.findOne({
+      $or: [{ email: searchIdentifier }, { username: searchIdentifier }]
+    });
+    
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
