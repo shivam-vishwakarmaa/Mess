@@ -20,6 +20,22 @@
   --ok: #00e676;
 }
 
+body.light-mode {
+  --bg-dark: #f8f9fc;
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(0, 0, 0, 0.05);
+  --glass-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
+  
+  --text-main: #1a1a24;
+  --text-muted: #6b7280;
+  
+  --brand-primary: #ff758c;
+  --brand-cyan: #ff7eb3;
+  
+  --accent-gradient: linear-gradient(135deg, var(--brand-primary), var(--brand-cyan));
+  --accent-gradient-hover: linear-gradient(135deg, #ff5c77, #ff5e9f);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -33,6 +49,7 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   position: relative;
+  transition: background-color 0.5s ease, color 0.5s ease;
 }
 
 /* Dynamic Animated Background */
@@ -76,6 +93,14 @@ body {
   bottom: -10%;
   right: -10%;
   animation-delay: -10s;
+}
+
+body.light-mode .ambient {
+  opacity: 0.6;
+}
+
+body.light-mode .glow-orb {
+  opacity: 0.3;
 }
 
 @keyframes floatOrb {
@@ -159,6 +184,16 @@ p {
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
+body.light-mode .tab.active {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-main);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+body.light-mode .tab:hover {
+  color: var(--text-main);
+}
+
 .form {
   display: grid;
   gap: 16px;
@@ -179,11 +214,17 @@ input, select, button {
 input, select {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #fff;
+  color: var(--text-main);
   border-radius: 16px;
   padding: 16px 20px;
   transition: all 0.3s ease;
   width: 100%;
+}
+
+body.light-mode input, 
+body.light-mode select {
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 select option {
@@ -227,12 +268,26 @@ button:active {
   transform: translateY(1px) scale(0.98);
 }
 
+button:disabled, button.loading {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 button.secondary {
   background: rgba(255, 255, 255, 0.1);
   box-shadow: none;
+  color: var(--text-main);
 }
-button.secondary:hover {
+body.light-mode button.secondary {
+  background: rgba(0, 0, 0, 0.05);
+}
+button.secondary:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.2);
+}
+body.light-mode button.secondary:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.1);
 }
 
 button.danger {
@@ -295,8 +350,8 @@ button.ghost-btn:hover {
 }
 
 .item {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   border-radius: 16px;
   padding: 20px;
   transition: transform 0.2s ease, background 0.2s ease;
@@ -306,6 +361,11 @@ button.ghost-btn:hover {
   background: rgba(255, 255, 255, 0.03);
   transform: translateY(-2px);
   border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.light-mode .item:hover {
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(0, 0, 0, 0.1);
 }
 
 #searchSuggestions .item {
@@ -319,13 +379,13 @@ button.ghost-btn:hover {
 
 .message {
   position: fixed;
-  bottom: 24px;
+  top: 24px;
   left: 50%;
-  transform: translate(-50%, 20px);
-  background: rgba(20, 20, 20, 0.9);
+  transform: translate(-50%, -40px);
+  background: var(--text-main);
+  color: var(--bg-dark);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #fff;
+  border: 1px solid var(--glass-border);
   padding: 16px 24px;
   border-radius: 100px;
   font-weight: 600;
@@ -339,6 +399,24 @@ button.ghost-btn:hover {
 .message.show {
   opacity: 1;
   transform: translate(-50%, 0);
+}
+
+.theme-toggle {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-main);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  padding: 0;
+  box-shadow: var(--glass-shadow);
 }
 
 @media (max-width: 768px) {

@@ -14,6 +14,49 @@ function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+router.get("/export/today", async (req, res) => {
+  try {
+    const token = req.query.token;
+    if (!token) return res.status(401).send("No token provided");
+
+    const jwt = require("jsonwebtoken");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const requestingUser = await User.findById(decoded.id);
+    
+    if (!requestingUser || requestingUser.role !== "admin") {
+      return res.status(403).send("Unauthorized");
+    }
+
+    const dateKey = todayKey();
+    
+    // Fetch all students
+    const students = await User.find({ role: "student" }).sort({ name: 1 });
+    
+    // Fetch today's attendance
+    const attendance = await Attendance.find({ dateKey }).populate("user", "name email username");
+    const attMap = new Map();
+    attendance.forEach(a => {
+      if(a.user) attMap.set(a.user._id.toString(), a);
+    });
+
+    let csvContent = "Name,Username,Email,Status,Marked By\n";
+    
+    students.forEach(student => {
+      const att = attMap.get(student._id.toString());
+      const status = att ? att.status : "absent (unmarked)";
+      const markedBy = att ? att.markedBy : "none";
+      const username = student.username || "-";
+      csvContent += `"${student.name}","${username}","${student.email}","${status}","${markedBy}"\n`;
+    });
+
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", `attachment; filename="attendance-${dateKey}.csv"`);
+    res.send(csvContent);
+  } catch (error) {
+    res.status(500).send("Export failed: " + error.message);
+  }
+});
+
 router.get("/users/suggest", async (req, res) => {
   const q = (req.query.q || "").trim();
   if (!q) return res.json({ users: [] });

@@ -1,6 +1,7 @@
 const state = {
   token: localStorage.getItem("token") || "",
-  user: null
+  user: null,
+  theme: localStorage.getItem("theme") || "dark"
 };
 let suggestionTimer = null;
 
@@ -42,8 +43,12 @@ const el = {
   searchAttendance: document.getElementById("searchAttendance"),
   loadPendingBtn: document.getElementById("loadPendingBtn"),
   pendingRequests: document.getElementById("pendingRequests"),
+  loadPendingBtn: document.getElementById("loadPendingBtn"),
+  pendingRequests: document.getElementById("pendingRequests"),
   loadResetRequestsBtn: document.getElementById("loadResetRequestsBtn"),
-  resetRequests: document.getElementById("resetRequests")
+  resetRequests: document.getElementById("resetRequests"),
+  themeToggle: document.getElementById("themeToggle"),
+  exportCsvBtn: document.getElementById("exportCsvBtn")
 };
 
 function showMessage(text, isError = false) {
@@ -137,6 +142,34 @@ function formatDate(iso) {
   return d.toLocaleDateString();
 }
 
+function applyTheme() {
+  if (state.theme === "light") {
+    document.body.classList.add("light-mode");
+    el.themeToggle.textContent = "🌙";
+  } else {
+    document.body.classList.remove("light-mode");
+    el.themeToggle.textContent = "🌞";
+  }
+}
+
+function toggleTheme() {
+  state.theme = state.theme === "dark" ? "light" : "dark";
+  localStorage.setItem("theme", state.theme);
+  applyTheme();
+}
+
+function setLoading(btn, isLoading, originalText) {
+  if (isLoading) {
+    btn.classList.add("loading");
+    btn.disabled = true;
+    btn.textContent = "Processing...";
+  } else {
+    btn.classList.remove("loading");
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
 function drawUserHeader() {
   el.welcomeText.textContent = `Welcome, ${state.user.name} (${state.user.role})`;
   el.metaText.textContent = `Joining date: ${formatDate(
@@ -188,7 +221,11 @@ async function loadStudentData() {
 
 async function onLogin(e) {
   e.preventDefault();
+  const btn = el.loginForm.querySelector('button[type="submit"]');
+  const orgText = btn.textContent;
+  
   try {
+    setLoading(btn, true, orgText);
     const role = el.loginRole.value;
     const identifier = document.getElementById("loginEmail").value.trim();
     const password = document.getElementById("loginPassword").value.trim();
@@ -211,12 +248,18 @@ async function onLogin(e) {
     showMessage("Login successful");
   } catch (error) {
     showMessage(error.message, true);
+  } finally {
+    setLoading(btn, false, orgText);
   }
 }
 
 async function onRegister(e) {
   e.preventDefault();
+  const btn = el.registerForm.querySelector('button[type="submit"]');
+  const orgText = btn.textContent;
+  
   try {
+    setLoading(btn, true, orgText);
     const role = el.registerRole.value;
     const name = document.getElementById("registerName").value.trim();
     const username = document.getElementById("registerUsername").value.trim();
@@ -252,6 +295,8 @@ async function onRegister(e) {
     showMessage("Account created");
   } catch (error) {
     showMessage(error.message, true);
+  } finally {
+    setLoading(btn, false, orgText);
   }
 }
 
@@ -596,6 +641,13 @@ el.logoutBtn.addEventListener("click", logout);
 el.forgotToggleBtn.addEventListener("click", () => {
   el.forgotForm.classList.toggle("hidden");
 });
+el.themeToggle.addEventListener("click", toggleTheme);
+
+if (el.exportCsvBtn) {
+  el.exportCsvBtn.addEventListener("click", () => {
+    window.open("/api/admin/export/today?token=" + state.token, "_blank");
+  });
+}
 
 el.markTodayBtn.addEventListener("click", async () => {
   try {
@@ -660,4 +712,5 @@ document.querySelectorAll(".password-toggle").forEach((button) => {
 });
 
 toggleAdminCodeField();
+applyTheme();
 initSession();

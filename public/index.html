@@ -17,6 +17,7 @@
     <div class="glow-orb orb-1"></div>
     <div class="glow-orb orb-2"></div>
     <main class="container">
+      <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">🌞</button>
       <section class="hero card">
         <h1>Mess Attendance</h1>
         <p>Quick attendance system for students and admins.</p>
@@ -111,6 +112,11 @@
         </div>
 
         <div id="adminPanel" class="panel hidden">
+          <h3>Admin Tools</h3>
+          <button id="exportCsvBtn" class="secondary" style="margin-bottom: 20px;">
+            Export Today's Attendance (CSV)
+          </button>
+          
           <h3>Search Student Attendance</h3>
           <div class="row wrap">
             <input id="searchName" type="text" placeholder="Student name" />
