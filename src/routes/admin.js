@@ -3,7 +3,7 @@ const LeaveRequest = require("../models/LeaveRequest");
 const PasswordResetRequest = require("../models/PasswordResetRequest");
 const User = require("../models/User");
 const { protect, requireRole } = require("../middleware/auth");
-const { daysSince, normalizeDateKey, toExpireAt } = require("../utils/date");
+const { daysSince, normalizeDateKey, toExpireAt, todayKey } = require("../utils/date");
 
 const router = express.Router();
 
@@ -37,8 +37,8 @@ router.get("/export/today", async (req, res) => {
         user: student._id,
         status: "approved"
       });
-      const daysPassed = daysSince(student.joiningDate);
-      const daysLeft = Math.max(0, 30 - daysPassed + approvedLeaves);
+      const renewals = student.renewals || 0;
+      const daysLeft = Math.max(0, 30 * (renewals + 1) - daysPassed + approvedLeaves);
       return {
         name: student.name,
         username: student.username || "-",
@@ -105,7 +105,8 @@ router.get("/attendance/search", async (req, res) => {
       user: u._id,
       status: "approved"
     });
-    const daysLeft = Math.max(0, 30 - daysSince(u.joiningDate) + approvedLeaves);
+    const renewals = u.renewals || 0;
+    const daysLeft = Math.max(0, 30 * (renewals + 1) - daysSince(u.joiningDate) + approvedLeaves);
     return {
       id: u._id,
       name: u.name,
@@ -240,7 +241,68 @@ router.patch("/requests/:id", async (req, res) => {
 
   return res.json({ request });
 });
+router.put("/users/:id/renew", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if (user.role !== "student") {
+      return res.status(400).json({ message: "Only student accounts can be renewed" });
+    }
 
+    user.renewals = (user.renewals || 0) + 1;
+    await user.save();
 
+    return res.json({ message: "Cycle renewed successfully", renewals: user.renewals });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+router.get("/metrics", async (req, res) => {
+  try {
+    const totalStudents = await User.countDocuments({ role: "student" });
+    
+    const dateKey = todayKey();
+    const approvedLeavesToday = await LeaveRequest.countDocuments({
+      dateKey,
+      status: "approved"
+    });
+    const todayEaters = totalStudents - approvedLeavesToday;
+    
+    const students = await User.find({ role: "student" })
+      .select("name username email joiningDate renewals");
+    const expiringStudents = [];
+    
+    for (const student of students) {
+      const approvedLeaves = await LeaveRequest.countDocuments({
+        user: student._id,
+        status: "approved"
+      });
+      const daysPassed = daysSince(student.joiningDate);
+      const renewals = student.renewals || 0;
+      const daysLeft = Math.max(0, 30 * (renewals + 1) - daysPassed + approvedLeaves);
+      
+      if (daysLeft <= 5) {
+        expiringStudents.push({
+          id: student._id,
+          name: student.name,
+          username: student.username,
+          email: student.email,
+          daysLeft
+        });
+      }
+    }
+    
+    return res.json({
+      totalStudents,
+      todayEaters,
+      expiringStudents: expiringStudents.sort((a,b) => a.daysLeft - b.daysLeft)
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
 
 module.exports = router;

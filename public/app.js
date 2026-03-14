@@ -38,6 +38,8 @@ const el = {
   searchUsers: document.getElementById("searchUsers"),
   loadPendingBtn: document.getElementById("loadPendingBtn"),
   resetRequests: document.getElementById("resetRequests"),
+  globalStats: document.getElementById("globalStats"),
+  expiringList: document.getElementById("expiringList"),
   themeToggle: document.getElementById("themeToggle"),
   exportCsvBtn: document.getElementById("exportCsvBtn")
 };
@@ -171,11 +173,84 @@ function drawUserHeader() {
 async function refreshMe() {
   const data = await api("/api/auth/me");
   state.user = data.user;
+  state.stats = data.stats || {};
   drawUserHeader();
   setAuthUI(true);
   const isAdmin = state.user.role === "admin";
   el.studentPanel.classList.toggle("hidden", isAdmin);
   el.adminPanel.classList.toggle("hidden", !isAdmin);
+  // Render global stats for everyone
+  if (data.stats) renderGlobalStats(data.stats);
+}
+
+function renderGlobalStats(stats) {
+  const container = el.globalStats;
+  clearNode(container);
+  container.classList.remove("hidden");
+
+  const totalCard = document.createElement("div");
+  totalCard.className = "stat-card";
+  totalCard.innerHTML = `<span class="stat-val">${stats.totalStudents}</span><span class="stat-label">Total Students</span>`;
+
+  const eatCard = document.createElement("div");
+  eatCard.className = "stat-card";
+  eatCard.innerHTML = `<span class="stat-val">${stats.todayEaters}</span><span class="stat-label">Eating Today</span>`;
+
+  container.appendChild(totalCard);
+  container.appendChild(eatCard);
+}
+
+async function loadAdminDashboard() {
+  try {
+    const data = await api("/api/admin/metrics");
+    clearNode(el.expiringList);
+
+    if (data.expiringStudents.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "muted";
+      empty.textContent = "✅ No students expiring soon!";
+      el.expiringList.appendChild(empty);
+    } else {
+      data.expiringStudents.forEach((user) => {
+        const item = makeItem();
+        item.classList.add("expiring-item");
+        appendTextLine(item, `${user.name}${user.username ? " (@" + user.username + ")" : ""}`);
+
+        const daysLine = document.createElement("div");
+        daysLine.className = user.daysLeft === 0 ? "days-expired" : "days-warning";
+        daysLine.textContent = user.daysLeft === 0 ? "⚠ EXPIRED" : `⚠ ${user.daysLeft} day(s) left`;
+        item.appendChild(daysLine);
+
+        const actionRow = document.createElement("div");
+        actionRow.className = "row wrap";
+
+        const renewBtn = document.createElement("button");
+        renewBtn.className = "renew-btn";
+        renewBtn.textContent = "🔄 Renew Cycle (+30 days)";
+        renewBtn.addEventListener("click", () => adminRenewUser(user.id, user.name, item));
+
+        actionRow.appendChild(renewBtn);
+        item.appendChild(actionRow);
+        el.expiringList.appendChild(item);
+      });
+    }
+  } catch (error) {
+    showMessage(error.message, true);
+  }
+}
+
+async function adminRenewUser(userId, userName, itemEl) {
+  if (!window.confirm(`Renew 30-day cycle for "${userName}"? (They must have paid fees)`)) return;
+  try {
+    await api(`/api/admin/users/${userId}/renew`, { method: "PUT" });
+    showMessage(`✅ Cycle renewed for ${userName}!`);
+    // Animate removal
+    itemEl.style.transition = "opacity 0.4s";
+    itemEl.style.opacity = "0";
+    setTimeout(() => itemEl.remove(), 400);
+  } catch (error) {
+    showMessage(error.message, true);
+  }
 }
 
 async function loadStudentData() {
@@ -218,6 +293,10 @@ async function onLogin(e) {
     localStorage.setItem("token", state.token);
     await refreshMe();
     if (state.user.role === "student") await loadStudentData();
+    if (state.user.role === "admin") {
+      await loadAdminDashboard();
+      await loadPending();
+    }
     showMessage("Login successful");
   } catch (error) {
     showMessage(error.message, true);
@@ -264,7 +343,10 @@ async function onRegister(e) {
     localStorage.setItem("token", state.token);
     await refreshMe();
     if (state.user.role === "student") await loadStudentData();
-    if (state.user.role === "admin") await loadPending();
+    if (state.user.role === "admin") {
+      await loadAdminDashboard();
+      await loadPending();
+    }
     showMessage("Account created");
   } catch (error) {
     showMessage(error.message, true);
@@ -285,6 +367,7 @@ async function initSession() {
     await refreshMe();
     if (state.user.role === "student") await loadStudentData();
     if (state.user.role === "admin") {
+      await loadAdminDashboard();
       await loadPending();
       await loadPasswordResets();
     }

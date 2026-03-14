@@ -39,6 +39,10 @@ const userSchema = new mongoose.Schema(
     joiningDate: {
       type: Date,
       default: Date.now
+    },
+    renewals: {
+      type: Number,
+      default: 0
     }
   },
   { timestamps: true }

@@ -3,13 +3,13 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const LeaveRequest = require("../models/LeaveRequest");
 const { protect } = require("../middleware/auth");
-const { daysSince } = require("../utils/date");
+const { daysSince, todayKey } = require("../utils/date");
 
 const router = express.Router();
 
 function signToken(userId) {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || "7d"
+    expiresIn: process.env.JWT_EXPIRES_IN || "30d"
   });
 }
 
@@ -23,8 +23,9 @@ async function publicUser(user) {
   }
 
   const daysPassed = daysSince(user.joiningDate);
-  // Formula: 30 - daysPassed + approvedLeaves
-  const daysLeft = Math.max(0, 30 - daysPassed + approvedLeaves);
+  const renewals = user.renewals || 0;
+  // Formula: 30 * (renewals + 1) - daysPassed + approvedLeaves
+  const daysLeft = Math.max(0, 30 * (renewals + 1) - daysPassed + approvedLeaves);
 
   return {
     id: user._id,
@@ -33,6 +34,7 @@ async function publicUser(user) {
     email: user.email,
     role: user.role,
     joiningDate: user.joiningDate,
+    renewals: user.renewals,
     daysLeftFor30: daysLeft
   };
 }
@@ -115,8 +117,24 @@ router.post("/login", async (req, res) => {
 });
 
 router.get("/me", protect, async (req, res) => {
-  const pUser = await publicUser(req.user);
-  return res.json({ user: pUser });
+  try {
+    const pUser = await publicUser(req.user);
+    
+    // Add global stats for the dashboard
+    const totalStudents = await User.countDocuments({ role: "student" });
+    const approvedLeavesToday = await LeaveRequest.countDocuments({
+      dateKey: todayKey(),
+      status: "approved"
+    });
+    const todayEaters = totalStudents - approvedLeavesToday;
+
+    return res.json({ 
+      user: pUser,
+      stats: { totalStudents, todayEaters }
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
 });
 
 module.exports = router;
