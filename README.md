@@ -1,106 +1,103 @@
-# Mess Attendance App
+# 🍽️ Mess Attendance Pro
 
-JWT-authenticated attendance app for students and admins, designed for 100+ users.
+A powerful, high-performance attendance and leave management system for students and mess admins. Designed for high-contrast visibility and a premium "Glassmorphism" user experience.
 
-## Features
+---
 
-- Student registration/login with JWT
-- Admin registration protected by private `ADMIN_REGISTRATION_CODE`
-- Optional admin bootstrap user from `.env`
-- Free forgot-password flow via admin approval (no paid email needed)
-- Students mark attendance manually
-- Auto-mark `present` every day at `11:00 PM` (timezone from `TZ`) if not marked
-- Students can request admin to keep attendance empty for a date with a message
-- Admin approves/rejects requests with one click
-- If approved, that date is not auto-marked, and student can mark it later
-- Admin can search students by name and view attendance
-- Admin can edit attendance status
-- Automatic deletion of attendance/request records after 30 days (TTL index)
-- Student/admin can see joining date and days left in 30-day cycle
-- Responsive animated UI
+## 🚀 Key Features
 
-## Tech Stack
+### 👨‍🎓 For Students
+- **Smart Dashboard**: View your joining date, days left in your 30-day cycle, and current status instantly.
+- **Advanced Leave Requests**: 
+  - Request leave for **today or any future date** using the built-in Date Picker.
+  - Automatically prevents attendance marking for approved leave dates.
+- **Easy Password Recovery**: Send reset requests with custom messages to admins (no email required).
+- **Admin Contact**: View the admin's contact number directly in your dashboard for quick help.
+- **Premium UI**: Seamlessly switch between **Light Mode** and **Dark Mode** with an animated toggle.
 
-- Node.js + Express
-- MongoDB Atlas (free tier compatible)
-- Mongoose
-- JWT
-- Vanilla HTML/CSS/JS frontend
+### 👑 For Admins
+- **Global Metrics**: Live count of "Total Students" and "Students Eating Today".
+- **Intelligent Search**: Real-time suggestions as you type. Search by Name or Username.
+- **User Management**:
+  - Edit student details (Phone, Email, Name, Username).
+  - **30-Day Cycle Renewals**: Extend a student's membership by +30 days with a single click after payment.
+  - Change student passwords or delete accounts instantly.
+- **Expiring Soon Alert**: A dedicated list of students whose membership ends in 5 days or less.
+- **Leave Request Terminal**: Approve or reject pending leave requests with real-time updates.
+- **Password Reset Terminal**: Review and fulfill password change requests.
+- **CSV Data Export**: One-click download of today's attendance summary for offline records.
+- **Global Contact Setting**: Set your phone number so all students can see it in their dashboard.
 
-## Setup
+---
 
-1. Install dependencies:
+## 🛠️ Tech Stack
 
-```bash
-npm install
-```
+- **Backend**: Node.js & Express.js
+- **Database**: MongoDB (Atlas compatible) with TTL indexing for auto-cleanup of old records.
+- **Auth**: Secure JWT (JSON Web Tokens) with Role-Based Access Control (RBAC).
+- **Security**: 
+  - Password hashing with `bcryptjs`.
+  - **API Rate Limiting**: Protection against brute-force and DDoS attempts.
+- **Frontend**: Pure Vanilla JS, HTML5, and CSS3. No heavy frameworks!
+- **UI Design**: Modern Glassmorphism using `backdrop-filter`, HSL color tokens, and Google Fonts (Outfit & Space Grotesk).
 
-2. Create `.env` from example:
+---
 
-```bash
-copy .env.example .env
-```
+## ⚙️ Setup & Installation
 
-3. Update `.env` values:
+1. **Clone & Install**:
+   ```bash
+   npm install
+   ```
 
-- `MONGODB_URI`
-- `JWT_SECRET`
-- `ADMIN_REGISTRATION_CODE` (share only with trusted admins)
-- Optional bootstrap admin: `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME`
+2. **Environment Configuration**:
+   Create a `.env` file from the example:
+   ```bash
+   # .env
+   MONGODB_URI=your_mongodb_connection_string
+   JWT_SECRET=your_super_secret_key
+   ADMIN_REGISTRATION_CODE=secret_key_to_create_admin_accounts
+   TZ=Asia/Kolkata
+   ```
 
-4. Start app:
+3. **Execution**:
+   ```bash
+   # Development
+   npm run dev
 
-```bash
-npm run dev
-```
+   # Production
+   npm start
+   ```
 
-or
+---
 
-```bash
-npm start
-```
+## 💡 Understanding the "Renewal" Logic
 
-5. Open:
+We use a "Cycle-based" system instead of monthly dates:
+1. When a student joins, they get **30 days**.
+2. If they pay for another month, the Admin clicks **"Renew Cycle (+30 days)"**.
+3. This increments the `renewals` count by 1, automatically adding **30 more days** to their expiration without needing to change their joining date.
+4. Any "Approved Leave Requests" are **added back** to their days left (e.g., if they were on leave for 2 days, they get 2 extra days in their cycle).
 
-`http://localhost:5000`
+---
 
-## API Overview
+## 📡 API Overview
 
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `GET /api/auth/me`
-- `POST /api/password-reset/request`
-- `GET /api/attendance/me`
-- `GET /api/attendance/can-mark`
-- `POST /api/attendance/mark`
-- `POST /api/requests`
-- `GET /api/requests/me`
-- `GET /api/admin/attendance/search?name=...` (admin)
-- `PUT /api/admin/attendance/:id` (admin)
-- `POST /api/admin/attendance` (admin)
-- `GET /api/admin/requests?status=pending` (admin)
-- `PATCH /api/admin/requests/:id` (admin)
-- `GET /api/admin/password-resets` (admin)
-- `PATCH /api/admin/password-resets/:id` (admin)
+| Endpoint | Method | Role | Description |
+| :--- | :---: | :---: | :--- |
+| `/api/auth/register` | `POST` | All | Create student/admin account |
+| `/api/auth/login` | `POST` | All | Authenticate and get JWT |
+| `/api/requests` | `POST` | Student | Send a leave request for a specific date |
+| `/api/admin/metrics` | `GET` | Admin | Get global stats and expiring soon list |
+| `/api/admin/attendance/search` | `GET` | Admin | Search students with detailed stats |
+| `/api/admin/users/:id/renew` | `PUT` | Admin | Manually add +30 days to a user cycle |
+| `/api/admin/export/today` | `GET` | Admin | Download current attendance as CSV |
 
-## Deployment
+---
 
-Deploy easily on Render/Railway/Vercel (Node server) with these env vars:
+## 📱 Mobile Support
+The app is fully responsive. On mobile devices, the theme toggle and admin tools are optimized for touch and smaller viewports.
 
-- `MONGODB_URI`
-- `JWT_SECRET`
-- `JWT_EXPIRES_IN`
-- `TZ`
-- `ADMIN_REGISTRATION_CODE`
-- `ADMIN_NAME`
-- `ADMIN_EMAIL`
-- `ADMIN_PASSWORD`
+---
 
-Use a MongoDB Atlas free instance as database.
-
-## Auth Role Flow
-
-- Login form has role selection (`User` / `Admin`)
-- Register form has role selection
-- If `Admin` is selected on register, `Admin Secret Code` is required
-- Backend verifies secret code against `ADMIN_REGISTRATION_CODE`
+*Built with ❤️ for efficient Mess Management.*
