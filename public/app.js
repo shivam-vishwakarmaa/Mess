@@ -37,6 +37,7 @@ const el = {
   searchSuggestions: document.getElementById("searchSuggestions"),
   searchUsers: document.getElementById("searchUsers"),
   loadPendingBtn: document.getElementById("loadPendingBtn"),
+  loadResetRequestsBtn: document.getElementById("loadResetRequestsBtn"),
   resetRequests: document.getElementById("resetRequests"),
   globalStats: document.getElementById("globalStats"),
   expiringList: document.getElementById("expiringList"),
@@ -724,8 +725,57 @@ el.sendRequestBtn.addEventListener("click", async () => {
   }
 });
 
-el.searchBtn.addEventListener("click", searchAttendance);
-el.searchName.addEventListener("input", () => {
+function safeAddListener(elName, event, callback) {
+  if (el[elName]) {
+    el[elName].addEventListener(event, callback);
+  }
+}
+
+safeAddListener("loginTab", "click", () => setTab("login"));
+safeAddListener("registerTab", "click", () => setTab("register"));
+safeAddListener("registerRole", "change", toggleAdminCodeField);
+safeAddListener("loginForm", "submit", onLogin);
+safeAddListener("forgotForm", "submit", submitForgotPassword);
+safeAddListener("registerForm", "submit", onRegister);
+safeAddListener("logoutBtn", "click", logout);
+safeAddListener("forgotToggleBtn", "click", () => {
+  el.forgotForm.classList.toggle("hidden");
+});
+safeAddListener("themeToggle", "click", toggleTheme);
+
+if (el.exportCsvBtn) {
+  el.exportCsvBtn.addEventListener("click", () => {
+    window.open("/api/admin/export/today?token=" + state.token, "_blank");
+  });
+}
+
+safeAddListener("refreshMeBtn", "click", async () => {
+  try {
+    await refreshMe();
+    await loadStudentData();
+    showMessage("Refreshed");
+  } catch (error) {
+    showMessage(error.message, true);
+  }
+});
+
+safeAddListener("sendRequestBtn", "click", async () => {
+  try {
+    const message = el.requestMsg.value.trim();
+    if (!message) return showMessage("Enter message", true);
+    await api("/api/requests", {
+      method: "POST",
+      body: JSON.stringify({ message })
+    });
+    showMessage("Request sent");
+    await loadStudentData();
+  } catch (error) {
+    showMessage(error.message, true);
+  }
+});
+
+safeAddListener("searchBtn", "click", searchAttendance);
+safeAddListener("searchName", "input", () => {
   if (suggestionTimer) {
     clearTimeout(suggestionTimer);
   }
@@ -733,9 +783,9 @@ el.searchName.addEventListener("input", () => {
     loadUserSuggestions(el.searchName.value);
   }, 180);
 });
-el.loadPendingBtn.addEventListener("click", loadPending);
-el.loadResetRequestsBtn.addEventListener("click", loadPasswordResets);
-el.updateAdminPhoneBtn.addEventListener("click", updateAdminPhone);
+safeAddListener("loadPendingBtn", "click", loadPending);
+safeAddListener("loadResetRequestsBtn", "click", loadPasswordResets);
+safeAddListener("updateAdminPhoneBtn", "click", updateAdminPhone);
 
 document.addEventListener("click", (e) => {
   const toggleBtn = e.target.closest(".password-toggle");
