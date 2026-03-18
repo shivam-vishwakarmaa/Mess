@@ -47,7 +47,8 @@ const el = {
   adminContactDisplay: document.getElementById("adminContactDisplay"),
   adminMyPhone: document.getElementById("adminMyPhone"),
   updateAdminPhoneBtn: document.getElementById("updateAdminPhoneBtn"),
-  requestDate: document.getElementById("requestDate")
+  requestDate: document.getElementById("requestDate"),
+  pendingRequests: document.getElementById("pendingRequests")
 };
 
 function showMessage(text, isError = false) {
@@ -414,7 +415,7 @@ async function searchAttendance() {
   clearNode(el.searchSuggestions);
 
   try {
-    const data = await api(`/api/admin/users/search?name=${encodeURIComponent(name)}`);
+    const data = await api(`/api/admin/attendance/search?name=${encodeURIComponent(name)}`);
 
     clearNode(el.searchUsers);
     data.users.forEach((user) => {
@@ -440,14 +441,15 @@ async function searchAttendance() {
       editForm.style.background = "rgba(255,255,255,0.05)";
       editForm.style.borderRadius = "8px";
 
+      const uId = user.id || user._id;
       editForm.innerHTML = `
         <div class="row wrap" style="gap: 10px;">
-          <input type="text" value="${user.name}" placeholder="Full Name" id="editName_${user.id}" />
-          <input type="text" value="${user.username || ""}" placeholder="Username" id="editUsername_${user.id}" />
-          <input type="email" value="${user.email}" placeholder="Email" id="editEmail_${user.id}" />
-          <input type="tel" value="${user.phoneNumber || ""}" placeholder="Phone" id="editPhone_${user.id}" />
-          <input type="number" value="${user.renewals || 0}" placeholder="Renewals" id="editRenewals_${user.id}" title="Renewals" />
-          <input type="password" placeholder="New Password (optional)" id="editPassword_${user.id}" />
+          <input type="text" value="${user.name}" placeholder="Full Name" id="editName_${uId}" />
+          <input type="text" value="${user.username || ""}" placeholder="Username" id="editUsername_${uId}" />
+          <input type="email" value="${user.email}" placeholder="Email" id="editEmail_${uId}" />
+          <input type="tel" value="${user.phoneNumber || ""}" placeholder="Phone" id="editPhone_${user.id || user._id}" />
+          <input type="number" value="${user.renewals || 0}" placeholder="Renewals" id="editRenewals_${user.id || user._id}" title="Renewals" />
+          <input type="password" placeholder="New Password (optional)" id="editPassword_${user.id || user._id}" />
         </div>
         <div class="row wrap" style="margin-top: 10px; gap: 10px;">
           <button class="save-btn" style="background: #2a5a3a;">Save Changes</button>
@@ -462,15 +464,16 @@ async function searchAttendance() {
       });
 
       editForm.querySelector(".save-btn").addEventListener("click", async () => {
+        const uId = user.id || user._id;
         const payload = {
-          name: document.getElementById(`editName_${user.id}`).value.trim(),
-          username: document.getElementById(`editUsername_${user.id}`).value.trim(),
-          email: document.getElementById(`editEmail_${user.id}`).value.trim(),
-          phoneNumber: document.getElementById(`editPhone_${user.id}`).value.trim(),
-          renewals: parseInt(document.getElementById(`editRenewals_${user.id}`).value),
-          password: document.getElementById(`editPassword_${user.id}`).value.trim()
+          name: document.getElementById(`editName_${uId}`).value.trim(),
+          username: document.getElementById(`editUsername_${uId}`).value.trim(),
+          email: document.getElementById(`editEmail_${uId}`).value.trim(),
+          phoneNumber: document.getElementById(`editPhone_${uId}`).value.trim(),
+          renewals: parseInt(document.getElementById(`editRenewals_${uId}`).value),
+          password: document.getElementById(`editPassword_${uId}`).value.trim()
         };
-        await adminUpdateUser(user.id, payload);
+        await adminUpdateUser(uId, payload);
       });
 
       editForm.querySelector(".delete-btn").addEventListener("click", async () => {
@@ -691,51 +694,6 @@ async function reviewRequest(id, action) {
     showMessage(error.message, true);
   }
 }
-
-el.loginTab.addEventListener("click", () => setTab("login"));
-el.registerTab.addEventListener("click", () => setTab("register"));
-el.registerRole.addEventListener("change", toggleAdminCodeField);
-el.loginForm.addEventListener("submit", onLogin);
-el.forgotForm.addEventListener("submit", submitForgotPassword);
-el.registerForm.addEventListener("submit", onRegister);
-el.logoutBtn.addEventListener("click", logout);
-el.forgotToggleBtn.addEventListener("click", () => {
-  el.forgotForm.classList.toggle("hidden");
-});
-el.themeToggle.addEventListener("click", toggleTheme);
-
-if (el.exportCsvBtn) {
-  el.exportCsvBtn.addEventListener("click", () => {
-    window.open("/api/admin/export/today?token=" + state.token, "_blank");
-  });
-}
-
-
-
-el.refreshMeBtn.addEventListener("click", async () => {
-  try {
-    await refreshMe();
-    await loadStudentData();
-    showMessage("Refreshed");
-  } catch (error) {
-    showMessage(error.message, true);
-  }
-});
-
-el.sendRequestBtn.addEventListener("click", async () => {
-  try {
-    const message = el.requestMsg.value.trim();
-    if (!message) return showMessage("Enter message", true);
-    await api("/api/requests", {
-      method: "POST",
-      body: JSON.stringify({ message })
-    });
-    showMessage("Request sent");
-    await loadStudentData();
-  } catch (error) {
-    showMessage(error.message, true);
-  }
-});
 
 function safeAddListener(elName, event, callback) {
   if (el[elName]) {
