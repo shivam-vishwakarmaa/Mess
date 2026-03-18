@@ -41,7 +41,11 @@ const el = {
   globalStats: document.getElementById("globalStats"),
   expiringList: document.getElementById("expiringList"),
   themeToggle: document.getElementById("themeToggle"),
-  exportCsvBtn: document.getElementById("exportCsvBtn")
+  exportCsvBtn: document.getElementById("exportCsvBtn"),
+  registerPhone: document.getElementById("registerPhone"),
+  adminContactDisplay: document.getElementById("adminContactDisplay"),
+  adminMyPhone: document.getElementById("adminMyPhone"),
+  updateAdminPhoneBtn: document.getElementById("updateAdminPhoneBtn")
 };
 
 function showMessage(text, isError = false) {
@@ -179,6 +183,20 @@ async function refreshMe() {
   const isAdmin = state.user.role === "admin";
   el.studentPanel.classList.toggle("hidden", isAdmin);
   el.adminPanel.classList.toggle("hidden", !isAdmin);
+  
+  // Show admin contact for students
+  if (!isAdmin && data.adminContact) {
+    el.adminContactDisplay.textContent = `Contact to admin via this number: ${data.adminContact}`;
+    el.adminContactDisplay.classList.remove("hidden");
+  } else {
+    el.adminContactDisplay.classList.add("hidden");
+  }
+
+  // Set admin's own phone in the input
+  if (isAdmin && state.user.phoneNumber) {
+    el.adminMyPhone.value = state.user.phoneNumber;
+  }
+
   // Render global stats for everyone
   if (data.stats) renderGlobalStats(data.stats);
 }
@@ -316,6 +334,7 @@ async function onRegister(e) {
     const name = document.getElementById("registerName").value.trim();
     const username = document.getElementById("registerUsername").value.trim();
     const email = document.getElementById("registerEmail").value.trim();
+    const phoneNumber = el.registerPhone.value.trim();
     const password = document.getElementById("registerPassword").value.trim();
     const adminCode = el.adminCode.value.trim();
 
@@ -337,7 +356,7 @@ async function onRegister(e) {
 
     const data = await api("/api/auth/register", {
       method: "POST",
-      body: JSON.stringify({ name, username, email, password, role, adminCode })
+      body: JSON.stringify({ name, username, email, password, phoneNumber, role, adminCode })
     });
     state.token = data.token;
     localStorage.setItem("token", state.token);
@@ -387,39 +406,94 @@ async function searchAttendance() {
     clearNode(el.searchUsers);
     data.users.forEach((user) => {
       const item = makeItem();
-      appendTextLine(item, `${user.name} (${user.email})`);
+      item.style.cursor = "pointer";
+      
+      const nameLine = document.createElement("div");
+      nameLine.style.fontWeight = "bold";
+      nameLine.style.fontSize = "1.1rem";
+      nameLine.textContent = `${user.name} (@${user.username || "no-username"})`;
+      item.appendChild(nameLine);
+
+      appendTextLine(item, `Email: ${user.email} | Phone: ${user.phoneNumber || "N/A"}`);
       appendTextLine(
         item,
-        `Joined: ${formatDate(user.joiningDate)} | Days left: ${user.daysLeftFor30}`
+        `Joined: ${formatDate(user.joiningDate)} | Days left: ${user.daysLeftFor30} | Renewals: ${user.renewals || 0}`
       );
 
-      const actionRow = document.createElement("div");
-      actionRow.className = "row wrap";
+      const editForm = document.createElement("div");
+      editForm.className = "form hidden";
+      editForm.style.marginTop = "15px";
+      editForm.style.padding = "15px";
+      editForm.style.background = "rgba(255,255,255,0.05)";
+      editForm.style.borderRadius = "8px";
 
-      const pwdInput = document.createElement("input");
-      pwdInput.type = "text";
-      pwdInput.placeholder = "New Password";
+      editForm.innerHTML = `
+        <div class="row wrap" style="gap: 10px;">
+          <input type="text" value="${user.name}" placeholder="Full Name" id="editName_${user.id}" />
+          <input type="text" value="${user.username || ""}" placeholder="Username" id="editUsername_${user.id}" />
+          <input type="email" value="${user.email}" placeholder="Email" id="editEmail_${user.id}" />
+          <input type="tel" value="${user.phoneNumber || ""}" placeholder="Phone" id="editPhone_${user.id}" />
+          <input type="number" value="${user.renewals || 0}" placeholder="Renewals" id="editRenewals_${user.id}" title="Renewals" />
+          <input type="password" placeholder="New Password (optional)" id="editPassword_${user.id}" />
+        </div>
+        <div class="row wrap" style="margin-top: 10px; gap: 10px;">
+          <button class="save-btn" style="background: #2a5a3a;">Save Changes</button>
+          <button class="danger delete-btn">Delete User</button>
+        </div>
+      `;
 
-      const changePwdBtn = document.createElement("button");
-      changePwdBtn.className = "secondary";
-      changePwdBtn.textContent = "Change Password";
-      changePwdBtn.addEventListener("click", async () => {
-        await adminChangePassword(user.id, pwdInput.value);
+      item.addEventListener("click", (e) => {
+        if (e.target.tagName !== "BUTTON" && e.target.tagName !== "INPUT") {
+          editForm.classList.toggle("hidden");
+        }
       });
 
-      const deleteBtn = document.createElement("button");
-      deleteBtn.className = "danger";
-      deleteBtn.textContent = "Delete User";
-      deleteBtn.addEventListener("click", async () => {
+      editForm.querySelector(".save-btn").addEventListener("click", async () => {
+        const payload = {
+          name: document.getElementById(`editName_${user.id}`).value.trim(),
+          username: document.getElementById(`editUsername_${user.id}`).value.trim(),
+          email: document.getElementById(`editEmail_${user.id}`).value.trim(),
+          phoneNumber: document.getElementById(`editPhone_${user.id}`).value.trim(),
+          renewals: parseInt(document.getElementById(`editRenewals_${user.id}`).value),
+          password: document.getElementById(`editPassword_${user.id}`).value.trim()
+        };
+        await adminUpdateUser(user.id, payload);
+      });
+
+      editForm.querySelector(".delete-btn").addEventListener("click", async () => {
         await adminDeleteUser(user.id, user.name);
       });
 
-      actionRow.appendChild(pwdInput);
-      actionRow.appendChild(changePwdBtn);
-      actionRow.appendChild(deleteBtn);
-      item.appendChild(actionRow);
+      item.appendChild(editForm);
       el.searchUsers.appendChild(item);
     });
+  } catch (error) {
+    showMessage(error.message, true);
+  }
+}
+
+async function adminUpdateUser(userId, payload) {
+  try {
+    const data = await api(`/api/admin/users/${userId}`, {
+      method: "PUT",
+      body: JSON.stringify(payload)
+    });
+    showMessage(data.message || "User updated");
+    await searchAttendance();
+  } catch (error) {
+    showMessage(error.message, true);
+  }
+}
+
+async function updateAdminPhone() {
+  const phoneNumber = el.adminMyPhone.value.trim();
+  try {
+    await api(`/api/admin/users/${state.user.id}`, {
+      method: "PUT",
+      body: JSON.stringify({ phoneNumber })
+    });
+    state.user.phoneNumber = phoneNumber;
+    showMessage("Phone number updated");
   } catch (error) {
     showMessage(error.message, true);
   }
@@ -661,8 +735,13 @@ el.searchName.addEventListener("input", () => {
 });
 el.loadPendingBtn.addEventListener("click", loadPending);
 el.loadResetRequestsBtn.addEventListener("click", loadPasswordResets);
-document.querySelectorAll(".password-toggle").forEach((button) => {
-  button.addEventListener("click", () => togglePasswordVisibility(button));
+el.updateAdminPhoneBtn.addEventListener("click", updateAdminPhone);
+
+document.addEventListener("click", (e) => {
+  const toggleBtn = e.target.closest(".password-toggle");
+  if (toggleBtn) {
+    togglePasswordVisibility(toggleBtn);
+  }
 });
 
 toggleAdminCodeField();

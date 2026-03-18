@@ -40,6 +40,10 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: Date.now
     },
+    phoneNumber: {
+      type: String,
+      trim: true
+    },
     renewals: {
       type: Number,
       default: 0

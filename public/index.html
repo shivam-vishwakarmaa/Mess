@@ -64,6 +64,7 @@
           <input type="text" id="registerName" placeholder="Full Name" required />
           <input type="text" id="registerUsername" placeholder="Username (min 3 chars)" required />
           <input type="email" id="registerEmail" placeholder="Email" required />
+          <input type="tel" id="registerPhone" placeholder="Phone Number" />
           <div class="password-wrap">
             <input type="password" id="registerPassword" placeholder="Password (min 6)" required />
             <button type="button" class="ghost-btn password-toggle" data-target="registerPassword">
@@ -87,6 +88,7 @@
         </div>
         <p id="metaText" class="muted"></p>
         <div id="globalStats" class="row wrap hidden" style="margin-bottom: 20px;"></div>
+        <div id="adminContactDisplay" class="message hidden" style="margin-bottom: 20px; background: #2a3a5a;"></div>
 
         <div id="studentPanel" class="panel hidden">
           <div class="row wrap">
@@ -111,6 +113,12 @@
               Export Today's Attendance (CSV)
             </button>
           </div>
+
+          <div class="row wrap align-center" style="margin-bottom: 20px; gap: 10px;">
+            <input type="tel" id="adminMyPhone" placeholder="My Contact Phone" />
+            <button id="updateAdminPhoneBtn" class="secondary">Update My Phone</button>
+          </div>
+
 
           <h3>Expiring Soon (<= 5 Days Left)</h3>
           <div id="expiringList" class="list"></div>

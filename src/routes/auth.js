@@ -32,6 +32,7 @@ async function publicUser(user) {
     name: user.name,
     username: user.username,
     email: user.email,
+    phoneNumber: user.phoneNumber,
     role: user.role,
     joiningDate: user.joiningDate,
     renewals: user.renewals,
@@ -41,7 +42,7 @@ async function publicUser(user) {
 
 router.post("/register", async (req, res) => {
   try {
-    const { name, username, email, password, role, adminCode } = req.body;
+    const { name, username, email, password, phoneNumber, role, adminCode } = req.body;
     if (!name || !username || !email || !password) {
       return res.status(400).json({ message: "Name, username, email and password are required" });
     }
@@ -72,6 +73,7 @@ router.post("/register", async (req, res) => {
       username: username.toLowerCase().trim(),
       email: email.toLowerCase().trim(),
       password: password.trim(),
+      phoneNumber: (phoneNumber || "").trim(),
       role: requestedRole
     });
 
@@ -120,17 +122,17 @@ router.get("/me", protect, async (req, res) => {
   try {
     const pUser = await publicUser(req.user);
     
-    // Add global stats for the dashboard
-    const totalStudents = await User.countDocuments({ role: "student" });
-    const approvedLeavesToday = await LeaveRequest.countDocuments({
-      dateKey: todayKey(),
-      status: "approved"
-    });
-    const todayEaters = totalStudents - approvedLeavesToday;
+    // Get admin contact for students
+    let adminContact = null;
+    if (req.user.role === "student") {
+      const admin = await User.findOne({ role: "admin", phoneNumber: { $exists: true, $ne: "" } });
+      if (admin) adminContact = admin.phoneNumber;
+    }
 
     return res.json({ 
       user: pUser,
-      stats: { totalStudents, todayEaters }
+      stats: { totalStudents, todayEaters },
+      adminContact
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });

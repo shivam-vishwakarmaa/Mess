@@ -37,6 +37,7 @@ router.get("/export/today", async (req, res) => {
         user: student._id,
         status: "approved"
       });
+      const daysPassed = daysSince(student.joiningDate);
       const renewals = student.renewals || 0;
       const daysLeft = Math.max(0, 30 * (renewals + 1) - daysPassed + approvedLeaves);
       return {
@@ -112,7 +113,9 @@ router.get("/attendance/search", async (req, res) => {
       name: u.name,
       username: u.username,
       email: u.email,
+      phoneNumber: u.phoneNumber,
       joiningDate: u.joiningDate,
+      renewals: u.renewals,
       daysLeftFor30: daysLeft
     };
   }));
@@ -120,6 +123,34 @@ router.get("/attendance/search", async (req, res) => {
   return res.json({
     users: usersWithStats
   });
+});
+
+router.put("/users/:id", async (req, res) => {
+  try {
+    const { name, username, email, phoneNumber, renewals, password } = req.body;
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (name) user.name = name;
+    if (username) {
+      const exists = await User.findOne({ username, _id: { $ne: user._id } });
+      if (exists) return res.status(400).json({ message: "Username already taken" });
+      user.username = username;
+    }
+    if (email) {
+      const exists = await User.findOne({ email, _id: { $ne: user._id } });
+      if (exists) return res.status(400).json({ message: "Email already registered" });
+      user.email = email;
+    }
+    if (phoneNumber !== undefined) user.phoneNumber = phoneNumber;
+    if (renewals !== undefined) user.renewals = renewals;
+    if (password) user.password = password;
+
+    await user.save();
+    return res.json({ message: "User updated successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
 });
 
 router.put("/users/:id/password", async (req, res) => {
