@@ -57,6 +57,7 @@ function showMessage(text, isError = false) {
 }
 
 function clearNode(node) {
+  if (!node) return;
   while (node.firstChild) {
     node.removeChild(node.firstChild);
   }
@@ -170,9 +171,13 @@ function setLoading(btn, isLoading, originalText) {
 
 function drawUserHeader() {
   el.welcomeText.textContent = `Welcome, ${state.user.name} (${state.user.role})`;
-  el.metaText.textContent = `Joining date: ${formatDate(
-    state.user.joiningDate
-  )} | Days left for 30-day cycle: ${state.user.daysLeftFor30}`;
+  if (state.user.role === "admin") {
+    el.metaText.textContent = `Joining date: ${formatDate(state.user.joiningDate)}`;
+  } else {
+    el.metaText.textContent = `Joining date: ${formatDate(
+      state.user.joiningDate
+    )} | Days left for 30-day cycle: ${state.user.daysLeftFor30}`;
+  }
 }
 
 async function refreshMe() {
@@ -198,8 +203,12 @@ async function refreshMe() {
     el.adminMyPhone.value = state.user.phoneNumber;
   }
 
-  // Render global stats for everyone
-  if (data.stats) renderGlobalStats(data.stats);
+  // Render global stats for admins only (Privacy fix)
+  if (isAdmin && data.stats) {
+    renderGlobalStats(data.stats);
+  } else {
+    el.globalStats.classList.add("hidden");
+  }
 }
 
 function renderGlobalStats(stats) {
@@ -444,9 +453,9 @@ async function searchAttendance() {
       `;
 
       item.addEventListener("click", (e) => {
-        if (e.target.tagName !== "BUTTON" && e.target.tagName !== "INPUT") {
-          editForm.classList.toggle("hidden");
-        }
+        // Prevent toggling if clicking inside the form inputs/buttons
+        if (editForm.contains(e.target)) return;
+        editForm.classList.toggle("hidden");
       });
 
       editForm.querySelector(".save-btn").addEventListener("click", async () => {
