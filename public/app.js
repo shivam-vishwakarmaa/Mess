@@ -46,7 +46,8 @@ const el = {
   registerPhone: document.getElementById("registerPhone"),
   adminContactDisplay: document.getElementById("adminContactDisplay"),
   adminMyPhone: document.getElementById("adminMyPhone"),
-  updateAdminPhoneBtn: document.getElementById("updateAdminPhoneBtn")
+  updateAdminPhoneBtn: document.getElementById("updateAdminPhoneBtn"),
+  requestDate: document.getElementById("requestDate")
 };
 
 function showMessage(text, isError = false) {
@@ -143,13 +144,9 @@ function formatDate(iso) {
 }
 
 function applyTheme() {
-  if (state.theme === "light") {
-    document.body.classList.add("light-mode");
-    el.themeToggle.textContent = "🌙";
-  } else {
-    document.body.classList.remove("light-mode");
-    el.themeToggle.textContent = "🌞";
-  }
+  const isLight = state.theme === "light";
+  document.body.classList.toggle("light-mode", isLight);
+  el.themeToggle.textContent = isLight ? "🌙" : "🌞";
 }
 
 function toggleTheme() {
@@ -202,6 +199,11 @@ async function refreshMe() {
   // Set admin's own phone in the input
   if (isAdmin && state.user.phoneNumber) {
     el.adminMyPhone.value = state.user.phoneNumber;
+  }
+
+  // Set default date for leave requests
+  if (!isAdmin && el.requestDate && !el.requestDate.value) {
+    el.requestDate.value = new Date().toISOString().split('T')[0];
   }
 
   // Render global stats for admins only (Privacy fix)
@@ -772,12 +774,16 @@ safeAddListener("refreshMeBtn", "click", async () => {
 safeAddListener("sendRequestBtn", "click", async () => {
   try {
     const message = el.requestMsg.value.trim();
-    if (!message) return showMessage("Enter message", true);
+    const dateKey = el.requestDate.value;
+    if (!message) return showMessage("Enter reason for leave", true);
+    if (!dateKey) return showMessage("Select a date", true);
+
     await api("/api/requests", {
       method: "POST",
-      body: JSON.stringify({ message })
+      body: JSON.stringify({ message, dateKey })
     });
     showMessage("Request sent");
+    el.requestMsg.value = "";
     await loadStudentData();
   } catch (error) {
     showMessage(error.message, true);

@@ -10,7 +10,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Sora:wght@400;600;700&display=swap"
     rel="stylesheet" />
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/styles.css?v=1.1" />
 </head>
 
 <body>
@@ -91,10 +91,11 @@
           <button id="refreshMeBtn" class="secondary">Refresh</button>
         </div>
 
-        <h3>Request Keep Empty</h3>
-        <p class="muted">Request works only for today and only before 5:00 PM.</p>
-        <div class="row wrap">
-          <input id="requestMsg" type="text" placeholder="Small message to admin" maxlength="250" />
+        <h3>Request Leave / Keep Empty</h3>
+        <p class="muted">Requests are allowed up to 7 days in advance.</p>
+        <div class="row wrap" style="gap: 12px; margin-bottom: 20px;">
+          <input id="requestDate" type="date" title="Select date for leave" />
+          <input id="requestMsg" type="text" placeholder="Reason (e.g. Vacation, Sick)" maxlength="250" />
           <button id="sendRequestBtn">Send Request</button>
         </div>
 

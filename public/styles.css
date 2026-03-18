@@ -21,7 +21,7 @@
 
   --orb-1: rgba(138, 43, 226, 0.15);
   --orb-2: rgba(0, 242, 254, 0.15);
-  
+
   --input-placeholder: rgba(255, 255, 255, 0.3);
   --header-h3: #ffffff;
   --tab-bg: rgba(0, 0, 0, 0.2);
@@ -45,7 +45,7 @@ body.light-mode {
 
   --orb-1: rgba(108, 92, 231, 0.1);
   --orb-2: rgba(0, 206, 201, 0.1);
-  
+
   --input-placeholder: rgba(0, 0, 0, 0.4);
   --header-h3: #2d3436;
   --tab-bg: rgba(0, 0, 0, 0.05);
