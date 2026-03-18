@@ -10,13 +10,16 @@
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
 
-  --brand-primary: #8b5cf6; /* Vivid Violet */
-  --brand-secondary: #06b6d4; /* Vivid Cyan */
-  --accent-gradient: linear-gradient(135deg, #a78bfa, #22d3ee); /* Brighter for text-clipping */
-  
+  --brand-primary: #8b5cf6;
+  /* Vivid Violet */
+  --brand-secondary: #06b6d4;
+  /* Vivid Cyan */
+  --accent-gradient: linear-gradient(135deg, #a78bfa, #22d3ee);
+  /* Brighter for text-clipping */
+
   --danger: #ef4444;
   --ok: #22c55e;
-  
+
   --orb-1: rgba(139, 92, 246, 0.2);
   --orb-2: rgba(6, 182, 212, 0.2);
 
@@ -183,7 +186,8 @@ h1 {
   background: var(--accent-gradient);
   -webkit-background-clip: text;
   background-clip: text;
-  color: white; /* Fallback */
+  color: white;
+  /* Fallback */
   -webkit-text-fill-color: transparent;
   text-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
@@ -531,7 +535,8 @@ body.light-mode .item:hover {
   background: var(--accent-gradient);
   -webkit-background-clip: text;
   background-clip: text;
-  color: white; /* Fallback */
+  color: white;
+  /* Fallback */
   -webkit-text-fill-color: transparent;
   line-height: 1;
   text-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);

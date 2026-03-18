@@ -249,8 +249,10 @@ async function loadAdminDashboard() {
         appendTextLine(item, `${user.name}${user.username ? " (@" + user.username + ")" : ""}`);
 
         const daysLine = document.createElement("div");
-        daysLine.className = user.daysLeft === 0 ? "days-expired" : "days-warning";
-        daysLine.textContent = user.daysLeft === 0 ? "⚠ EXPIRED" : `⚠ ${user.daysLeft} day(s) left`;
+        daysLine.className = user.daysLeft <= 0 ? "days-expired" : "days-warning";
+        daysLine.textContent = user.daysLeft <= 0 ? `⚠ ${user.daysLeft} day(s) left` : `⚠ ${user.daysLeft} day(s) left`;
+        // And if exactly 0, maybe explicitly say EXPIRED too
+        if (user.daysLeft <= 0) daysLine.textContent = `⚠ EXPIRED (0 days left)`;
         item.appendChild(daysLine);
 
         const actionRow = document.createElement("div");
@@ -447,9 +449,12 @@ async function searchAttendance() {
           <input type="text" value="${user.name}" placeholder="Full Name" id="editName_${uId}" />
           <input type="text" value="${user.username || ""}" placeholder="Username" id="editUsername_${uId}" />
           <input type="email" value="${user.email}" placeholder="Email" id="editEmail_${uId}" />
-          <input type="tel" value="${user.phoneNumber || ""}" placeholder="Phone" id="editPhone_${user.id || user._id}" />
-          <input type="number" value="${user.renewals || 0}" placeholder="Renewals" id="editRenewals_${user.id || user._id}" title="Renewals" />
-          <input type="password" placeholder="New Password (optional)" id="editPassword_${user.id || user._id}" />
+          <input type="tel" value="${user.phoneNumber || ""}" placeholder="Phone" id="editPhone_${uId}" />
+          <div class="row wrap" style="gap: 5px; flex: 1;">
+            <label style="font-size: 0.8rem; opacity: 0.7;">Renewals (Manual extensions):</label>
+            <input type="number" min="0" value="${user.renewals || 0}" placeholder="Renewals" id="editRenewals_${uId}" />
+          </div>
+          <input type="password" placeholder="New Password (optional)" id="editPassword_${uId}" />
         </div>
         <div class="row wrap" style="margin-top: 10px; gap: 10px;">
           <button class="save-btn" style="background: #2a5a3a;">Save Changes</button>

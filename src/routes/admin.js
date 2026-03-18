@@ -7,8 +7,6 @@ const { daysSince, normalizeDateKey, toExpireAt, todayKey } = require("../utils/
 
 const router = express.Router();
 
-router.use(protect, requireRole("admin"));
-
 function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -58,11 +56,15 @@ router.get("/export/today", async (req, res) => {
 
     res.setHeader("Content-Type", "text/csv");
     res.setHeader("Content-Disposition", `attachment; filename="attendance-${dateKey}.csv"`);
-    res.send(csvContent);
+    return res.send(csvContent);
   } catch (error) {
+    console.error("Export error:", error);
     res.status(500).send("Export failed: " + error.message);
   }
 });
+
+// Protect all other admin routes
+router.use(protect, requireRole("admin"));
 
 router.get("/users/suggest", async (req, res) => {
   const q = (req.query.q || "").trim();
@@ -143,7 +145,9 @@ router.put("/users/:id", async (req, res) => {
       user.email = email;
     }
     if (phoneNumber !== undefined) user.phoneNumber = phoneNumber;
-    if (renewals !== undefined) user.renewals = renewals;
+    if (renewals !== undefined) {
+      user.renewals = Math.max(0, parseInt(renewals) || 0);
+    }
     if (password) user.password = password;
 
     await user.save();
