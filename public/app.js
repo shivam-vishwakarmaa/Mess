@@ -117,8 +117,8 @@ function toggleAdminCodeField() {
 }
 
 function togglePasswordVisibility(button) {
-  const targetId = button.getAttribute("data-target");
-  const input = document.getElementById(targetId);
+  const wrap = button.closest(".password-wrap");
+  const input = wrap ? wrap.querySelector('input') : null;
   if (!input) return;
   const show = input.type === "password";
   input.type = show ? "text" : "password";
