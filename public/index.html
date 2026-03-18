@@ -1,149 +1,146 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mess Attendance</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Sora:wght@400;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="/styles.css" />
-  </head>
-  <body>
-    <div class="ambient"></div>
-    <div class="glow-orb orb-1"></div>
-    <div class="glow-orb orb-2"></div>
-    <main class="container">
-      <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">🌞</button>
-      <section class="hero card">
-        <h1>Mess Attendance</h1>
-        <p>Quick attendance system for students and admins.</p>
-      </section>
 
-      <section id="authSection" class="card">
-        <div class="tabs">
-          <button id="loginTab" class="tab active">Login</button>
-          <button id="registerTab" class="tab">Register</button>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mess Attendance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Sora:wght@400;600;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+
+<body>
+  <div class="ambient"></div>
+  <div class="glow-orb orb-1"></div>
+  <div class="glow-orb orb-2"></div>
+  <main class="container">
+    <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">🌞</button>
+    <section class="hero card">
+      <h1>Mess Attendance</h1>
+      <p>Quick attendance system for students and admins.</p>
+    </section>
+
+    <section id="authSection" class="card">
+      <div class="tabs">
+        <button id="loginTab" class="tab active">Login</button>
+        <button id="registerTab" class="tab">Register</button>
+      </div>
+
+      <form id="loginForm" class="form">
+        <select id="loginRole" required>
+          <option value="student">Login as User</option>
+          <option value="admin">Login as Admin</option>
+        </select>
+        <input type="text" id="loginEmail" placeholder="Username or Email" required />
+        <div class="password-wrap">
+          <input type="password" id="loginPassword" placeholder="Password" required />
+          <button type="button" class="ghost-btn password-toggle" data-target="loginPassword">
+            Show
+          </button>
+        </div>
+        <button type="submit">Login</button>
+        <button type="button" id="forgotToggleBtn" class="secondary">Forgot Password</button>
+      </form>
+
+      <form id="forgotForm" class="form hidden">
+        <input type="email" id="forgotEmail" placeholder="Your registered email" required />
+        <input type="text" id="forgotMessage" placeholder="Optional message for admin" maxlength="250" />
+        <button type="submit">Send Reset Request</button>
+      </form>
+
+      <form id="registerForm" class="form hidden">
+        <select id="registerRole" required>
+          <option value="student">Create User Account</option>
+          <option value="admin">Create Admin Account</option>
+        </select>
+        <input type="text" id="registerName" placeholder="Full Name" required />
+        <input type="text" id="registerUsername" placeholder="Username (min 3 chars)" required />
+        <input type="email" id="registerEmail" placeholder="Email" required />
+        <input type="tel" id="registerPhone" placeholder="Phone Number" />
+        <div class="password-wrap">
+          <input type="password" id="registerPassword" placeholder="Password (min 6)" required />
+          <button type="button" class="ghost-btn password-toggle" data-target="registerPassword">
+            Show
+          </button>
+        </div>
+        <div id="adminCodeWrap" class="password-wrap hidden">
+          <input type="password" id="adminCode" placeholder="Admin Secret Code" autocomplete="off" />
+          <button type="button" class="ghost-btn password-toggle" data-target="adminCode">
+            Show
+          </button>
+        </div>
+        <button type="submit">Create Account</button>
+      </form>
+    </section>
+
+    <section id="appSection" class="card hidden">
+      <div class="row between">
+        <h2 id="welcomeText">Welcome</h2>
+        <button id="logoutBtn" class="danger">Logout</button>
+      </div>
+      <p id="metaText" class="muted"></p>
+      <div id="globalStats" class="row wrap hidden" style="margin-bottom: 20px;"></div>
+      <div id="adminContactDisplay" class="message hidden"></div>
+
+      <div id="studentPanel" class="panel hidden">
+        <div class="row wrap">
+          <button id="refreshMeBtn" class="secondary">Refresh</button>
         </div>
 
-        <form id="loginForm" class="form">
-          <select id="loginRole" required>
-            <option value="student">Login as User</option>
-            <option value="admin">Login as Admin</option>
-          </select>
-          <input type="text" id="loginEmail" placeholder="Username or Email" required />
-          <div class="password-wrap">
-            <input type="password" id="loginPassword" placeholder="Password" required />
-            <button type="button" class="ghost-btn password-toggle" data-target="loginPassword">
-              Show
-            </button>
-          </div>
-          <button type="submit">Login</button>
-          <button type="button" id="forgotToggleBtn" class="secondary">Forgot Password</button>
-        </form>
-
-        <form id="forgotForm" class="form hidden">
-          <input type="email" id="forgotEmail" placeholder="Your registered email" required />
-          <input
-            type="text"
-            id="forgotMessage"
-            placeholder="Optional message for admin"
-            maxlength="250"
-          />
-          <button type="submit">Send Reset Request</button>
-        </form>
-
-        <form id="registerForm" class="form hidden">
-          <select id="registerRole" required>
-            <option value="student">Create User Account</option>
-            <option value="admin">Create Admin Account</option>
-          </select>
-          <input type="text" id="registerName" placeholder="Full Name" required />
-          <input type="text" id="registerUsername" placeholder="Username (min 3 chars)" required />
-          <input type="email" id="registerEmail" placeholder="Email" required />
-          <input type="tel" id="registerPhone" placeholder="Phone Number" />
-          <div class="password-wrap">
-            <input type="password" id="registerPassword" placeholder="Password (min 6)" required />
-            <button type="button" class="ghost-btn password-toggle" data-target="registerPassword">
-              Show
-            </button>
-          </div>
-          <div id="adminCodeWrap" class="password-wrap hidden">
-            <input type="password" id="adminCode" placeholder="Admin Secret Code" autocomplete="off" />
-            <button type="button" class="ghost-btn password-toggle" data-target="adminCode">
-              Show
-            </button>
-          </div>
-          <button type="submit">Create Account</button>
-        </form>
-      </section>
-
-      <section id="appSection" class="card hidden">
-        <div class="row between">
-          <h2 id="welcomeText">Welcome</h2>
-          <button id="logoutBtn" class="danger">Logout</button>
-        </div>
-        <p id="metaText" class="muted"></p>
-        <div id="globalStats" class="row wrap hidden" style="margin-bottom: 20px;"></div>
-        <div id="adminContactDisplay" class="message hidden" style="margin-bottom: 20px; background: #2a3a5a;"></div>
-
-        <div id="studentPanel" class="panel hidden">
-          <div class="row wrap">
-            <button id="refreshMeBtn" class="secondary">Refresh</button>
-          </div>
-
-          <h3>Request Keep Empty</h3>
-          <p class="muted">Request works only for today and only before 5:00 PM.</p>
-          <div class="row wrap">
-            <input id="requestMsg" type="text" placeholder="Small message to admin" maxlength="250" />
-            <button id="sendRequestBtn">Send Request</button>
-          </div>
-
-          <h3>My Requests</h3>
-          <div id="myRequestList" class="list"></div>
+        <h3>Request Keep Empty</h3>
+        <p class="muted">Request works only for today and only before 5:00 PM.</p>
+        <div class="row wrap">
+          <input id="requestMsg" type="text" placeholder="Small message to admin" maxlength="250" />
+          <button id="sendRequestBtn">Send Request</button>
         </div>
 
-        <div id="adminPanel" class="panel hidden">
-          <div class="row between align-center" style="margin-bottom: 20px;">
-            <h3>Admin Tools</h3>
-            <button id="exportCsvBtn" class="secondary">
-              Export Today's Attendance (CSV)
-            </button>
-          </div>
+        <h3>My Requests</h3>
+        <div id="myRequestList" class="list"></div>
+      </div>
 
-          <div class="row wrap align-center" style="margin-bottom: 20px; gap: 10px;">
-            <input type="tel" id="adminMyPhone" placeholder="My Contact Phone" />
-            <button id="updateAdminPhoneBtn" class="secondary">Update My Phone</button>
-          </div>
-
-
-          <h3>Expiring Soon (<= 5 Days Left)</h3>
-          <div id="expiringList" class="list"></div>
-          
-          <h3>Search Students</h3>
-          <div class="row wrap">
-            <input id="searchName" type="text" placeholder="Student name" />
-            <button id="searchBtn">Search</button>
-          </div>
-          <div id="searchSuggestions" class="list"></div>
-          <div id="searchUsers" class="list"></div>
-
-          <h3>Pending Empty Requests</h3>
-          <button id="loadPendingBtn" class="secondary">Load Pending</button>
-          <div id="pendingRequests" class="list"></div>
-
-          <h3>Password Reset Requests</h3>
-          <button id="loadResetRequestsBtn" class="secondary">Load Reset Requests</button>
-          <div id="resetRequests" class="list"></div>
+      <div id="adminPanel" class="panel hidden">
+        <div class="row between align-center" style="margin-bottom: 20px;">
+          <h3>Admin Tools</h3>
+          <button id="exportCsvBtn" class="secondary">
+            Export Today's Attendance (CSV)
+          </button>
         </div>
-      </section>
 
-      <section id="messageBox" class="message"></section>
-    </main>
+        <div class="row wrap align-center" style="margin-bottom: 20px; gap: 10px;">
+          <input type="tel" id="adminMyPhone" placeholder="My Contact Phone" />
+          <button id="updateAdminPhoneBtn" class="secondary">Update My Phone</button>
+        </div>
 
-    <script src="/app.js"></script>
-  </body>
+
+        <h3>Expiring Soon (<= 5 Days Left)</h3>
+            <div id="expiringList" class="list"></div>
+
+            <h3>Search Students</h3>
+            <div class="row wrap">
+              <input id="searchName" type="text" placeholder="Student name" />
+              <button id="searchBtn">Search</button>
+            </div>
+            <div id="searchSuggestions" class="list"></div>
+            <div id="searchUsers" class="list"></div>
+
+            <h3>Pending Empty Requests</h3>
+            <button id="loadPendingBtn" class="secondary">Load Pending</button>
+            <div id="pendingRequests" class="list"></div>
+
+            <h3>Password Reset Requests</h3>
+            <button id="loadResetRequestsBtn" class="secondary">Load Reset Requests</button>
+            <div id="resetRequests" class="list"></div>
+      </div>
+    </section>
+
+    <section id="messageBox" class="message"></section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+
 </html>

@@ -51,7 +51,8 @@ const el = {
 
 function showMessage(text, isError = false) {
   el.messageBox.textContent = text;
-  el.messageBox.style.background = isError ? "#712a2a" : "#1f332e";
+  el.messageBox.classList.remove("error", "success");
+  el.messageBox.classList.add(isError ? "error" : "success");
   el.messageBox.classList.add("show");
   setTimeout(() => el.messageBox.classList.remove("show"), 2500);
 }
@@ -189,7 +190,7 @@ async function refreshMe() {
   const isAdmin = state.user.role === "admin";
   el.studentPanel.classList.toggle("hidden", isAdmin);
   el.adminPanel.classList.toggle("hidden", !isAdmin);
-  
+
   // Show admin contact for students
   if (!isAdmin && data.adminContact) {
     el.adminContactDisplay.textContent = `Contact to admin via this number: ${data.adminContact}`;
@@ -299,7 +300,7 @@ async function onLogin(e) {
   e.preventDefault();
   const btn = el.loginForm.querySelector('button[type="submit"]');
   const orgText = btn.textContent;
-  
+
   try {
     setLoading(btn, true, orgText);
     const role = el.loginRole.value;
@@ -337,7 +338,7 @@ async function onRegister(e) {
   e.preventDefault();
   const btn = el.registerForm.querySelector('button[type="submit"]');
   const orgText = btn.textContent;
-  
+
   try {
     setLoading(btn, true, orgText);
     const role = el.registerRole.value;
@@ -417,7 +418,7 @@ async function searchAttendance() {
     data.users.forEach((user) => {
       const item = makeItem();
       item.style.cursor = "pointer";
-      
+
       const nameLine = document.createElement("div");
       nameLine.style.fontWeight = "bold";
       nameLine.style.fontSize = "1.1rem";

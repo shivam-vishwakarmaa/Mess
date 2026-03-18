@@ -21,16 +21,16 @@ router.get("/export/today", async (req, res) => {
     const jwt = require("jsonwebtoken");
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const requestingUser = await User.findById(decoded.id);
-    
+
     if (!requestingUser || requestingUser.role !== "admin") {
       return res.status(403).send("Unauthorized");
     }
 
     const dateKey = todayKey();
-    
+
     // Fetch all students
     const students = await User.find({ role: "student" }).sort({ name: 1 });
-    
+
     // Calculate stats for each student
     const studentData = await Promise.all(students.map(async (student) => {
       const approvedLeaves = await LeaveRequest.countDocuments({
@@ -51,7 +51,7 @@ router.get("/export/today", async (req, res) => {
     }));
 
     let csvContent = "Name,Username,Email,Joined Date,Total Approved Leaves,Days Left (of 30)\n";
-    
+
     studentData.forEach(s => {
       csvContent += `"${s.name}","${s.username}","${s.email}","${s.joined}","${s.approvedLeaves}","${s.daysLeft}"\n`;
     });
@@ -164,7 +164,7 @@ router.put("/users/:id/password", async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    
+
     if (user.role !== "student") {
       return res.status(400).json({ message: "Can only change student passwords" });
     }
@@ -294,18 +294,18 @@ router.put("/users/:id/renew", async (req, res) => {
 router.get("/metrics", async (req, res) => {
   try {
     const totalStudents = await User.countDocuments({ role: "student" });
-    
+
     const dateKey = todayKey();
     const approvedLeavesToday = await LeaveRequest.countDocuments({
       dateKey,
       status: "approved"
     });
     const todayEaters = totalStudents - approvedLeavesToday;
-    
+
     const students = await User.find({ role: "student" })
       .select("name username email joiningDate renewals");
     const expiringStudents = [];
-    
+
     for (const student of students) {
       const approvedLeaves = await LeaveRequest.countDocuments({
         user: student._id,
@@ -314,7 +314,7 @@ router.get("/metrics", async (req, res) => {
       const daysPassed = daysSince(student.joiningDate);
       const renewals = student.renewals || 0;
       const daysLeft = Math.max(0, 30 * (renewals + 1) - daysPassed + approvedLeaves);
-      
+
       if (daysLeft <= 5) {
         expiringStudents.push({
           id: student._id,
@@ -325,11 +325,11 @@ router.get("/metrics", async (req, res) => {
         });
       }
     }
-    
+
     return res.json({
       totalStudents,
       todayEaters,
-      expiringStudents: expiringStudents.sort((a,b) => a.daysLeft - b.daysLeft)
+      expiringStudents: expiringStudents.sort((a, b) => a.daysLeft - b.daysLeft)
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });

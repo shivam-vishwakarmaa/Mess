@@ -96,7 +96,7 @@ router.post("/login", async (req, res) => {
     const user = await User.findOne({
       $or: [{ email: searchIdentifier }, { username: searchIdentifier }]
     });
-    
+
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
@@ -121,7 +121,7 @@ router.post("/login", async (req, res) => {
 router.get("/me", protect, async (req, res) => {
   try {
     const pUser = await publicUser(req.user);
-    
+
     // Get global stats
     const totalStudents = await User.countDocuments({ role: "student" });
     const approvedLeavesToday = await LeaveRequest.countDocuments({
@@ -137,7 +137,7 @@ router.get("/me", protect, async (req, res) => {
       if (admin) adminContact = admin.phoneNumber;
     }
 
-    return res.json({ 
+    return res.json({
       user: pUser,
       stats: { totalStudents, todayEaters },
       adminContact
