@@ -122,6 +122,14 @@ router.get("/me", protect, async (req, res) => {
   try {
     const pUser = await publicUser(req.user);
     
+    // Get global stats
+    const totalStudents = await User.countDocuments({ role: "student" });
+    const approvedLeavesToday = await LeaveRequest.countDocuments({
+      dateKey: todayKey(),
+      status: "approved"
+    });
+    const todayEaters = totalStudents - approvedLeavesToday;
+
     // Get admin contact for students
     let adminContact = null;
     if (req.user.role === "student") {
