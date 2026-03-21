@@ -10,6 +10,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const el = {
   authSection: document.getElementById("authSection"),
   appSection: document.getElementById("appSection"),
+  mainContainer: document.getElementById("mainContainer"),
   loginTab: document.getElementById("loginTab"),
   registerTab: document.getElementById("registerTab"),
   loginForm: document.getElementById("loginForm"),
@@ -108,7 +109,7 @@ async function api(path, options = {}) {
 }
 
 function setAuthUI(loggedIn) {
-  el.authSection.classList.toggle("hidden", loggedIn);
+  el.mainContainer.classList.toggle("hidden", loggedIn);
   el.appSection.classList.toggle("hidden", !loggedIn);
 }
 

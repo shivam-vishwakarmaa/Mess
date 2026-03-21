@@ -798,10 +798,19 @@ body.light-mode .stat-box {
     display: inline-flex !important;
   }
   .main-wrapper {
-    padding: 16px;
+    padding: 12px;
   }
   
-  .tools-grid {
-    grid-template-columns: 1fr !important;
+  .topbar {
+    padding: 12px 16px !important;
+    margin-bottom: 20px !important;
+  }
+
+  .topbar h2 {
+    font-size: 1.1rem !important;
+  }
+
+  .welcome-header h1 {
+    font-size: 1.8rem !important;
   }
 }

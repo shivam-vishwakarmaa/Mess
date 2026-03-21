@@ -17,7 +17,7 @@
   <div class="ambient"></div>
   <div class="glow-orb orb-1"></div>
   <div class="glow-orb orb-2"></div>
-  <main class="container">
+  <main class="container" id="mainContainer">
     <button id="themeToggle" class="theme-toggle auth-only-theme-toggle" aria-label="Toggle theme">🌞</button>
     <section class="hero card">
       <h1>Mess Attendance</h1>
@@ -92,20 +92,8 @@
           <button class="nav-btn" data-target="view-students">
             <span class="icon">👥</span> Students
           </button>
-          <button class="nav-btn" data-target="view-logs">
-            <span class="icon">📋</span> Attendance Logs
-          </button>
-          <button class="nav-btn" data-target="view-reports">
-            <span class="icon">📈</span> Reports
-          </button>
-          <button class="nav-btn" data-target="view-settings">
-            <span class="icon">⚙️</span> Settings
-          </button>
         </nav>
         <div class="sidebar-footer" style="margin-top:auto; padding-top:24px;">
-          <button id="quickScanBtn" class="primary-btn full-width" style="margin-bottom:12px; width:100%;">
-            <span class="icon">🔍</span> Quick Scan
-          </button>
           <button id="logoutBtn" class="ghost-btn full-width danger-text" style="width:100%; border:none; text-align:left; color: #dc2626;">
             <span class="icon" style="margin-right:8px;">🚪</span> Logout
           </button>
@@ -115,22 +103,13 @@
       <!-- Main Content Area -->
       <div class="main-wrapper">
         <header class="topbar card" style="display:flex; justify-content:space-between; align-items:center; padding: 16px 32px; margin-bottom: 24px;">
-          <div class="topbar-left row align-center" style="gap:16px;">
-            <button id="mobileMenuBtn" class="icon-btn mobile-only ghost-btn" style="padding:8px; display:none;">☰</button>
+          <div class="topbar-left" style="display:flex; align-items:center; gap:16px;">
+            <button id="mobileMenuBtn" class="icon-btn mobile-only ghost-btn" style="padding:8px;">☰</button>
             <h2 style="margin:0; font-size:1.4rem;">Mess Attendance Admin</h2>
           </div>
-          <div class="topbar-center desktop-only" style="flex:1; max-width:400px; margin: 0 24px;">
-             <!-- Search styling will be in CSS -->
-             <div class="search-wrap" style="position:relative;">
-               <input id="topSearchInput" type="text" placeholder="Search data..." style="padding:10px 16px 10px 40px; border-radius:100px; background:var(--input-bg); width:100%;" />
-               <span style="position:absolute; left:14px; top:50%; transform:translateY(-50%); opacity:0.5;">🔍</span>
-             </div>
-          </div>
-          <div class="topbar-right row align-center">
+          <div class="topbar-right" style="display:flex; align-items:center;">
              <button id="appThemeToggle" class="icon-btn ghost-btn" aria-label="Toggle theme" style="padding:8px; border-radius:50%; width:40px; height:40px; border:none; background:transparent;">🌞</button>
-             <span class="icon" style="margin:0 10px; opacity:0.7;">🔔</span>
-             <span class="icon" style="margin-right:15px; opacity:0.7;">⚙️</span>
-             <span id="topUserName" style="font-weight:600; padding-left:15px; border-left:1px solid var(--glass-border);">User</span>
+             <span id="topUserName" style="font-weight:600; padding-left:15px; border-left:1px solid var(--glass-border); margin-left:15px;">User</span>
           </div>
         </header>
 
@@ -146,6 +125,44 @@
                <div id="globalStats" class="stats-grid hidden" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:24px;"></div>
             </div>
 
+               <!-- Admin Utilities -->
+               <div class="card" style="padding: 24px;">
+                  <h3 style="margin:0 0 16px 0; font-size:1.2rem;">Quick Actions</h3>
+                  <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:24px;">
+                    <div>
+                      <label class="muted" style="display:block; margin-bottom:8px; font-weight:600;">Data Export</label>
+                      <button id="exportCsvBtn" class="secondary" style="width:100%; justify-content:center; display:flex; align-items:center; gap:8px;">
+                        <span class="icon">📥</span> Export (CSV)
+                      </button>
+                    </div>
+                    <div>
+                      <label class="muted" style="display:block; margin-bottom:8px; font-weight:600;">Update Admin Phone</label>
+                      <div class="row wrap" style="gap:10px;">
+                        <input type="tel" id="adminMyPhone" placeholder="Phone Number" style="flex:1; padding:12px;" />
+                        <button id="updateAdminPhoneBtn" style="padding:12px 24px; background: var(--brand-secondary);" class="primary-btn">Update</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="adminContactDisplay" class="message hidden" style="margin-top:16px; position:static; transform:none; width:100%;"></div>
+               </div>
+
+               <!-- Student Requests Form (Appended for students via JS) -->
+               <div id="studentPanel" class="panel hidden" style="margin-top:0;">
+                  <div class="card" style="padding:24px;">
+                     <button id="refreshMeBtn" class="secondary" style="margin-bottom:24px;">Refresh</button>
+                     <h3>Request Leave / Keep Empty</h3>
+                     <p class="muted" style="margin-bottom:16px;">Requests are allowed up to 7 days in advance.</p>
+                     <div class="row wrap" style="gap: 12px; margin-bottom: 32px;">
+                       <input id="requestDate" type="date" title="Select date for leave" style="padding:12px; border-radius:8px;" />
+                       <input id="requestMsg" type="text" placeholder="Reason (e.g. Vacation, Sick)" maxlength="250" style="flex:1; padding:12px; border-radius:8px;" />
+                       <button id="sendRequestBtn" style="padding:12px 24px; border-radius:8px;">Send Request</button>
+                     </div>
+                     <h3>My Requests</h3>
+                     <div id="myRequestList" class="list"></div>
+                  </div>
+               </div>
+            </div>
+
             <div class="side-column" style="display:flex; flex-direction:column; gap:24px;">
               <div class="card side-card expiring-card" style="padding:24px;">
                  <div class="row align-center" style="margin-bottom: 16px;">
@@ -153,22 +170,25 @@
                  </div>
                  <div id="expiringList" class="list" style="margin:0;"></div>
               </div>
-              
-              <div class="card side-card system-status-card" style="padding:24px; background: var(--brand-secondary); color: white; border: none; overflow:hidden; position:relative;">
-                 <div style="position:absolute; top:-50%; right:-50%; width:200px; height:200px; background:rgba(255,255,255,0.2); filter:blur(40px); border-radius:50%; pointer-events:none;"></div>
-                 <div class="row align-center" style="gap: 16px; margin-bottom: 24px; position:relative; z-index:1;">
-                   <div class="status-icon" style="background:rgba(255,255,255,0.2); padding:12px; border-radius:12px; font-size:1.5rem; line-height:1;">
-                     <span>🖥️</span>
-                   </div>
-                   <div>
-                     <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; opacity:0.9; margin-bottom:4px;">System Status</div>
-                     <div style="font-weight:700; font-size:1.2rem;">Operational</div>
-                   </div>
+
+              <!-- Pending Requests -->
+              <div class="card side-card" style="padding:24px;">
+                 <div class="row between align-center" style="margin-bottom: 12px;">
+                    <h3 style="margin:0; font-size:1.1rem;">Entry Requests</h3>
+                    <span class="badge" style="background:rgba(6, 182, 212, 0.2); color:var(--brand-secondary); padding:4px 8px; font-size:0.75rem;">NEW</span>
                  </div>
-                 <div class="progress-bar-bg" style="background:rgba(255,255,255,0.3); height:8px; border-radius:4px; overflow:hidden; position:relative; z-index:1;">
-                   <div class="progress-bar-fill" style="background:white; width:94%; height:100%; border-radius:4px;"></div>
+                 <button id="loadPendingBtn" class="secondary" style="margin-bottom: 16px; width:100%;"><span class="icon" style="margin-right:8px;">↻</span> Load Pending</button>
+                 <div id="pendingRequests" class="list" style="margin-top:12px; margin-bottom:0;"></div>
+              </div>
+
+              <!-- Reset Requests -->
+              <div class="card side-card" style="padding: 24px;">
+                 <div class="row between align-center" style="margin-bottom: 12px;">
+                   <h3 style="margin:0; font-size:1.1rem;">Password Resets</h3>
+                   <span class="badge" style="background:rgba(239, 68, 68, 0.2); color:var(--danger); padding:4px 8px; font-size:0.75rem;">URGENT</span>
                  </div>
-                 <div style="text-align:right; font-size:0.75rem; margin-top:8px; opacity:0.9; position:relative; z-index:1;">94% Daily Capacity Used</div>
+                 <button id="loadResetRequestsBtn" class="secondary" style="margin-bottom:16px; width:100%;"><span class="icon" style="margin-right:8px;">↻</span> Load Resets</button>
+                 <div id="resetRequests" class="list" style="margin-top:12px; margin-bottom:0;"></div>
               </div>
             </div>
           </div>
@@ -186,71 +206,6 @@
               </div>
               <div id="searchSuggestions" class="list" style="margin:0;"></div>
               <div id="searchUsers" class="list student-cards-grid" style="display:grid; gap:16px;"></div>
-           </div>
-        </div>
-
-        <!-- Attendance Logs View -->
-        <div id="view-logs" class="view-section hidden">
-           <div class="card" style="padding:24px;">
-              <div class="row between align-center" style="margin-bottom: 12px;">
-                 <h3 style="margin:0; font-size:1.4rem;">Pending Entry Requests</h3>
-                 <span class="badge" style="background:rgba(6, 182, 212, 0.2); color:var(--brand-secondary); padding:4px 12px; font-size:0.8rem;">NEW</span>
-              </div>
-              <p class="muted" style="margin-bottom: 20px;">Review student leave / entry requests</p>
-              <button id="loadPendingBtn" class="primary-btn" style="margin-bottom: 16px;"><span class="icon" style="margin-right:8px;">↻</span> Load Pending Requests</button>
-              <div id="pendingRequests" class="list" style="margin-top:12px; margin-bottom:0;"></div>
-           </div>
-           
-           <div id="studentPanel" class="panel hidden" style="margin-top:24px;">
-              <div class="card" style="padding:24px;">
-                 <button id="refreshMeBtn" class="secondary" style="margin-bottom:24px;">Refresh</button>
-                 <h3>Request Leave / Keep Empty</h3>
-                 <p class="muted" style="margin-bottom:16px;">Requests are allowed up to 7 days in advance.</p>
-                 <div class="row wrap" style="gap: 12px; margin-bottom: 32px;">
-                   <input id="requestDate" type="date" title="Select date for leave" style="padding:12px; border-radius:8px;" />
-                   <input id="requestMsg" type="text" placeholder="Reason (e.g. Vacation, Sick)" maxlength="250" style="flex:1; padding:12px; border-radius:8px;" />
-                   <button id="sendRequestBtn" style="padding:12px 24px; border-radius:8px;">Send Request</button>
-                 </div>
-                 <h3>My Requests</h3>
-                 <div id="myRequestList" class="list"></div>
-              </div>
-           </div>
-        </div>
-
-        <!-- Reports View -->
-        <div id="view-reports" class="view-section hidden">
-           <div class="card" style="padding: 24px;">
-              <h3 style="margin:0 0 16px 0; font-size:1.4rem;">Data Export</h3>
-              <p class="muted" style="margin-bottom: 24px;">Export today's mess attendance metrics as a CSV file to review offline.</p>
-              <button id="exportCsvBtn" class="primary-btn" style="width:max-content; justify-content:center; display:flex; align-items:center; gap:8px;">
-                <span class="icon">📥</span> Export Today's Attendance (CSV)
-              </button>
-           </div>
-        </div>
-
-        <!-- Settings View -->
-        <div id="view-settings" class="view-section hidden">
-           <div class="card" style="padding: 24px; margin-bottom: 24px;">
-              <h3 style="margin:0 0 16px 0; font-size:1.4rem;">Settings</h3>
-              
-              <div class="tool-group" style="max-width: 400px; margin-bottom: 24px;">
-                <label class="muted" style="display:block; margin-bottom:8px; font-weight:600;">Quick Update Admin Phone</label>
-                <div class="row wrap" style="gap:10px;">
-                  <input type="tel" id="adminMyPhone" placeholder="Phone Number" style="flex:1; padding:12px;" />
-                  <button id="updateAdminPhoneBtn" style="padding:12px 24px; background: var(--brand-secondary);" class="primary-btn">Update</button>
-                </div>
-              </div>
-              <div id="adminContactDisplay" class="message hidden" style="margin-top:16px; position:static; transform:none; width:100%;"></div>
-           </div>
-
-           <div class="card" style="padding: 24px;">
-               <div class="row between align-center" style="margin-bottom: 12px;">
-                 <h3 style="margin:0; font-size:1.3rem;">Password Reset Requests</h3>
-                 <span class="badge" style="background:rgba(239, 68, 68, 0.2); color:var(--danger); padding:4px 12px;">URGENT</span>
-               </div>
-               <p class="muted" style="margin-bottom: 20px;">Review and process password reset requests from students</p>
-               <button id="loadResetRequestsBtn" class="primary-btn" style="margin-bottom:16px;"><span class="icon" style="margin-right:8px;">↻</span> Load Reset Requests</button>
-               <div id="resetRequests" class="list" style="margin-top:12px; margin-bottom:0;"></div>
            </div>
         </div>
       </div>
