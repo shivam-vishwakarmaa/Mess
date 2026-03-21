@@ -27,7 +27,8 @@ const el = {
   metaText: document.getElementById("metaText"),
   logoutBtn: document.getElementById("logoutBtn"),
   studentPanel: document.getElementById("studentPanel"),
-  adminPanel: document.getElementById("adminPanel"),
+  viewSections: document.querySelectorAll(".view-section"),
+  navBtns: document.querySelectorAll(".sidebar-nav .nav-btn"),
   refreshMeBtn: document.getElementById("refreshMeBtn"),
   requestMsg: document.getElementById("requestMsg"),
   sendRequestBtn: document.getElementById("sendRequestBtn"),
@@ -179,7 +180,7 @@ function drawUserHeader() {
   el.welcomeText.textContent = `Welcome, ${state.user.name}`;
   el.topUserName.textContent = state.user.name;
   el.sidebarUserName.textContent = state.user.name;
-  
+
   const formattedRole = state.user.role === "admin" ? "System Administrator" : "Student";
   el.sidebarUserRole.textContent = formattedRole;
 
@@ -199,8 +200,25 @@ async function refreshMe() {
   drawUserHeader();
   setAuthUI(true);
   const isAdmin = state.user.role === "admin";
-  el.studentPanel.classList.toggle("hidden", isAdmin);
-  el.adminPanel.classList.toggle("hidden", !isAdmin);
+  
+  // Wire dynamic visibility based on Role
+  if (!isAdmin) {
+    el.navBtns.forEach(btn => {
+      const t = btn.getAttribute("data-target");
+      if (t !== "view-dashboard") btn.classList.add("hidden");
+    });
+    document.querySelectorAll(".side-card").forEach(c => c.classList.add("hidden"));
+    
+    // Move student panel to dashboard for students
+    const dashMain = document.querySelector("#view-dashboard .main-column");
+    if (dashMain && el.studentPanel) dashMain.appendChild(el.studentPanel);
+    if (el.studentPanel) el.studentPanel.classList.remove("hidden");
+    
+  } else {
+    el.navBtns.forEach(btn => btn.classList.remove("hidden"));
+    document.querySelectorAll(".side-card").forEach(c => c.classList.remove("hidden"));
+    if (el.studentPanel) el.studentPanel.classList.add("hidden");
+  }
 
   // Show admin contact for students
   if (!isAdmin && data.adminContact) {
@@ -458,8 +476,8 @@ async function searchAttendance() {
       // Badge logic
       const isExpiring = user.daysLeftFor30 <= 5;
       const badgeHtml = isExpiring
-         ? `<span class="badge" style="background:rgba(239, 68, 68, 0.2); color:var(--danger)">EXPIRING SOON</span>`
-         : `<span class="badge badge-active">ACTIVE</span>`;
+        ? `<span class="badge" style="background:rgba(239, 68, 68, 0.2); color:var(--danger)">EXPIRING SOON</span>`
+        : `<span class="badge badge-active">ACTIVE</span>`;
 
       item.innerHTML = `
         <div class="student-card-header">
@@ -496,12 +514,12 @@ async function searchAttendance() {
       const actionRow = document.createElement("div");
       actionRow.className = "row";
       actionRow.style.marginTop = "8px";
-      
+
       const editBtn = document.createElement("button");
       editBtn.className = "secondary";
       editBtn.textContent = "Edit Details";
       editBtn.style.padding = "10px 16px";
-      
+
       actionRow.appendChild(editBtn);
       item.appendChild(actionRow);
 
@@ -793,12 +811,35 @@ el.themeToggle.forEach(btn => {
   btn.addEventListener("click", toggleTheme);
 });
 
-// Mobile Sidebar Logic
+// Mobile Sidebar & Tab View Logic
+if (el.navBtns) {
+  el.navBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const targetId = btn.getAttribute("data-target");
+      if (!targetId) return;
+
+      // Unset active class on all buttons & views
+      el.navBtns.forEach(b => b.classList.remove("active"));
+      el.viewSections.forEach(v => v.classList.add("hidden"));
+      
+      // Set active on clicked button and respective view
+      btn.classList.add("active");
+      const targetView = document.getElementById(targetId);
+      if (targetView) targetView.classList.remove("hidden");
+      
+      // Close mobile menu
+      if (el.appSidebar) {
+         el.appSidebar.classList.remove("mobile-open");
+      }
+    });
+  });
+}
+
 if (el.mobileMenuBtn) {
   el.mobileMenuBtn.addEventListener("click", () => {
     el.appSidebar.classList.toggle("mobile-open");
   });
-  
+
   // Close menu if clicked outside sidebar when open
   document.addEventListener("click", (e) => {
     if (el.appSidebar && el.appSidebar.classList.contains("mobile-open")) {
