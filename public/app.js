@@ -433,7 +433,7 @@ async function searchAttendance() {
       appendTextLine(item, `Email: ${user.email} | Phone: ${user.phoneNumber || "N/A"}`);
       appendTextLine(
         item,
-        `Joined: ${formatDate(user.joiningDate)} | Days left: ${user.daysLeftFor30} | Renewals: ${user.renewals || 0}`
+        `Joined: ${formatDate(user.joiningDate)} | Days left: ${user.daysLeftFor30} | Renewals: ${user.renewals || 0} | Extra Days: ${user.extraDays || 0}`
       );
 
       const editForm = document.createElement("div");
@@ -453,6 +453,10 @@ async function searchAttendance() {
           <div class="row wrap" style="gap: 5px; flex: 1;">
             <label style="font-size: 0.8rem; opacity: 0.7;">Renewals (Manual extensions):</label>
             <input type="number" min="0" value="${user.renewals || 0}" placeholder="Renewals" id="editRenewals_${uId}" />
+          </div>
+          <div class="row wrap" style="gap: 5px; flex: 1;">
+            <label style="font-size: 0.8rem; opacity: 0.7;">Extra Days (Adjust days left):</label>
+            <input type="number" value="${user.extraDays || 0}" placeholder="Extra Days" id="editExtraDays_${uId}" />
           </div>
           <input type="password" placeholder="New Password (optional)" id="editPassword_${uId}" />
         </div>
@@ -476,6 +480,7 @@ async function searchAttendance() {
           email: document.getElementById(`editEmail_${uId}`).value.trim(),
           phoneNumber: document.getElementById(`editPhone_${uId}`).value.trim(),
           renewals: parseInt(document.getElementById(`editRenewals_${uId}`).value),
+          extraDays: parseInt(document.getElementById(`editExtraDays_${uId}`).value),
           password: document.getElementById(`editPassword_${uId}`).value.trim()
         };
         await adminUpdateUser(uId, payload);

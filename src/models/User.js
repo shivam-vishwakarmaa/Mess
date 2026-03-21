@@ -47,6 +47,10 @@ const userSchema = new mongoose.Schema(
     renewals: {
       type: Number,
       default: 0
+    },
+    extraDays: {
+      type: Number,
+      default: 0
     }
   },
   { timestamps: true }

@@ -37,7 +37,8 @@ router.get("/export/today", async (req, res) => {
       });
       const daysPassed = daysSince(student.joiningDate);
       const renewals = student.renewals || 0;
-      const daysLeft = Math.max(0, 30 * (renewals + 1) - daysPassed + approvedLeaves);
+      const extraDays = student.extraDays || 0;
+      const daysLeft = Math.max(0, 30 * (renewals + 1) - daysPassed + approvedLeaves + extraDays);
       return {
         name: student.name,
         username: student.username || "-",
@@ -101,7 +102,7 @@ router.get("/attendance/search", async (req, res) => {
       { name: { $regex: q, $options: "i" } },
       { username: { $regex: q, $options: "i" } }
     ]
-  }).select("name username email joiningDate");
+  }).select("name username email joiningDate renewals extraDays phoneNumber");
 
   const usersWithStats = await Promise.all(users.map(async (u) => {
     const approvedLeaves = await LeaveRequest.countDocuments({
@@ -109,7 +110,8 @@ router.get("/attendance/search", async (req, res) => {
       status: "approved"
     });
     const renewals = u.renewals || 0;
-    const daysLeft = Math.max(0, 30 * (renewals + 1) - daysSince(u.joiningDate) + approvedLeaves);
+    const extraDays = u.extraDays || 0;
+    const daysLeft = Math.max(0, 30 * (renewals + 1) - daysSince(u.joiningDate) + approvedLeaves + extraDays);
     return {
       id: u._id,
       name: u.name,
@@ -118,6 +120,7 @@ router.get("/attendance/search", async (req, res) => {
       phoneNumber: u.phoneNumber,
       joiningDate: u.joiningDate,
       renewals: u.renewals,
+      extraDays: u.extraDays,
       daysLeftFor30: daysLeft
     };
   }));
@@ -129,7 +132,7 @@ router.get("/attendance/search", async (req, res) => {
 
 router.put("/users/:id", async (req, res) => {
   try {
-    const { name, username, email, phoneNumber, renewals, password } = req.body;
+    const { name, username, email, phoneNumber, renewals, password, extraDays } = req.body;
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -147,6 +150,9 @@ router.put("/users/:id", async (req, res) => {
     if (phoneNumber !== undefined) user.phoneNumber = phoneNumber;
     if (renewals !== undefined) {
       user.renewals = Math.max(0, parseInt(renewals) || 0);
+    }
+    if (extraDays !== undefined) {
+      user.extraDays = parseInt(extraDays) || 0;
     }
     if (password) user.password = password;
 
@@ -307,7 +313,7 @@ router.get("/metrics", async (req, res) => {
     const todayEaters = totalStudents - approvedLeavesToday;
 
     const students = await User.find({ role: "student" })
-      .select("name username email joiningDate renewals");
+      .select("name username email joiningDate renewals extraDays");
     const expiringStudents = [];
 
     for (const student of students) {
@@ -317,7 +323,8 @@ router.get("/metrics", async (req, res) => {
       });
       const daysPassed = daysSince(student.joiningDate);
       const renewals = student.renewals || 0;
-      const daysLeft = Math.max(0, 30 * (renewals + 1) - daysPassed + approvedLeaves);
+      const extraDays = student.extraDays || 0;
+      const daysLeft = Math.max(0, 30 * (renewals + 1) - daysPassed + approvedLeaves + extraDays);
 
       if (daysLeft <= 5) {
         expiringStudents.push({

@@ -24,8 +24,9 @@ async function publicUser(user) {
 
   const daysPassed = daysSince(user.joiningDate);
   const renewals = user.renewals || 0;
-  // Formula: 30 * (renewals + 1) - daysPassed + approvedLeaves
-  const daysLeft = Math.max(0, 30 * (renewals + 1) - daysPassed + approvedLeaves);
+  const extraDays = user.extraDays || 0;
+  // Formula: 30 * (renewals + 1) - daysPassed + approvedLeaves + extraDays
+  const daysLeft = Math.max(0, 30 * (renewals + 1) - daysPassed + approvedLeaves + extraDays);
 
   return {
     id: user._id,
@@ -36,6 +37,7 @@ async function publicUser(user) {
     role: user.role,
     joiningDate: user.joiningDate,
     renewals: user.renewals,
+    extraDays: user.extraDays,
     daysLeftFor30: daysLeft
   };
 }
