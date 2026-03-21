@@ -55,7 +55,12 @@ const el = {
   mobileMenuBtn: document.getElementById("mobileMenuBtn"),
   topUserName: document.getElementById("topUserName"),
   sidebarUserName: document.getElementById("sidebarUserName"),
-  sidebarUserRole: document.getElementById("sidebarUserRole")
+  sidebarUserRole: document.getElementById("sidebarUserRole"),
+  adminQuickActions: document.getElementById("adminQuickActions"),
+  sideExpiringCard: document.getElementById("sideExpiringCard"),
+  sidePendingCard: document.getElementById("sidePendingCard"),
+  sideResetCard: document.getElementById("sideResetCard"),
+  appHeaderTitle: document.getElementById("appHeaderTitle")
 };
 
 function showMessage(text, isError = false) {
@@ -204,11 +209,17 @@ async function refreshMe() {
   
   // Wire dynamic visibility based on Role
   if (!isAdmin) {
+    el.appHeaderTitle.textContent = "Mess Attendance Student";
     el.navBtns.forEach(btn => {
       const t = btn.getAttribute("data-target");
       if (t !== "view-dashboard") btn.classList.add("hidden");
     });
-    document.querySelectorAll(".side-card").forEach(c => c.classList.add("hidden"));
+    
+    // Hide all admin cards
+    el.adminQuickActions.classList.add("hidden");
+    el.sideExpiringCard.classList.add("hidden");
+    el.sidePendingCard.classList.add("hidden");
+    el.sideResetCard.classList.add("hidden");
     
     // Move student panel to dashboard for students
     const dashMain = document.querySelector("#view-dashboard .main-column");
@@ -216,8 +227,15 @@ async function refreshMe() {
     if (el.studentPanel) el.studentPanel.classList.remove("hidden");
     
   } else {
+    el.appHeaderTitle.textContent = "Mess Attendance Admin";
     el.navBtns.forEach(btn => btn.classList.remove("hidden"));
-    document.querySelectorAll(".side-card").forEach(c => c.classList.remove("hidden"));
+    
+    // Show Admin features
+    el.adminQuickActions.classList.remove("hidden");
+    el.sideExpiringCard.classList.remove("hidden");
+    el.sidePendingCard.classList.remove("hidden");
+    el.sideResetCard.classList.remove("hidden");
+    
     if (el.studentPanel) el.studentPanel.classList.add("hidden");
   }
 
