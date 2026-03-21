@@ -41,14 +41,19 @@ const el = {
   resetRequests: document.getElementById("resetRequests"),
   globalStats: document.getElementById("globalStats"),
   expiringList: document.getElementById("expiringList"),
-  themeToggle: document.getElementById("themeToggle"),
+  themeToggle: document.querySelectorAll(".theme-toggle, #appThemeToggle"),
   exportCsvBtn: document.getElementById("exportCsvBtn"),
   registerPhone: document.getElementById("registerPhone"),
   adminContactDisplay: document.getElementById("adminContactDisplay"),
   adminMyPhone: document.getElementById("adminMyPhone"),
   updateAdminPhoneBtn: document.getElementById("updateAdminPhoneBtn"),
   requestDate: document.getElementById("requestDate"),
-  pendingRequests: document.getElementById("pendingRequests")
+  pendingRequests: document.getElementById("pendingRequests"),
+  appSidebar: document.getElementById("appSidebar"),
+  mobileMenuBtn: document.getElementById("mobileMenuBtn"),
+  topUserName: document.getElementById("topUserName"),
+  sidebarUserName: document.getElementById("sidebarUserName"),
+  sidebarUserRole: document.getElementById("sidebarUserRole")
 };
 
 function showMessage(text, isError = false) {
@@ -147,7 +152,9 @@ function formatDate(iso) {
 function applyTheme() {
   const isLight = state.theme === "light";
   document.body.classList.toggle("light-mode", isLight);
-  el.themeToggle.textContent = isLight ? "🌙" : "🌞";
+  el.themeToggle.forEach(btn => {
+    btn.textContent = isLight ? "🌙" : "🌞";
+  });
 }
 
 function toggleTheme() {
@@ -169,13 +176,19 @@ function setLoading(btn, isLoading, originalText) {
 }
 
 function drawUserHeader() {
-  el.welcomeText.textContent = `Welcome, ${state.user.name} (${state.user.role})`;
+  el.welcomeText.textContent = `Welcome, ${state.user.name}`;
+  el.topUserName.textContent = state.user.name;
+  el.sidebarUserName.textContent = state.user.name;
+  
+  const formattedRole = state.user.role === "admin" ? "System Administrator" : "Student";
+  el.sidebarUserRole.textContent = formattedRole;
+
   if (state.user.role === "admin") {
-    el.metaText.textContent = `Joining date: ${formatDate(state.user.joiningDate)}`;
+    el.metaText.innerHTML = `<span class="icon">📅</span> Joining date: ${formatDate(state.user.joiningDate)}`;
   } else {
-    el.metaText.textContent = `Joining date: ${formatDate(
+    el.metaText.innerHTML = `<span class="icon">📅</span> Joining date: ${formatDate(
       state.user.joiningDate
-    )} | Days left for 30-day cycle: ${state.user.daysLeftFor30}`;
+    )} | Days left for 30-day cycle: <strong style="color:var(--text-main);">${state.user.daysLeftFor30}</strong>`;
   }
 }
 
@@ -222,11 +235,29 @@ function renderGlobalStats(stats) {
 
   const totalCard = document.createElement("div");
   totalCard.className = "stat-card";
-  totalCard.innerHTML = `<span class="stat-val">${stats.totalStudents}</span><span class="stat-label">Total Students</span>`;
+  totalCard.style.cssText = "display:flex; flex-direction:row; justify-content:flex-start; gap:20px; align-items:center;";
+  totalCard.innerHTML = `
+    <div style="background:rgba(124, 58, 237, 0.15); color:var(--brand-primary); padding:16px; border-radius:50%; font-size:1.5rem; line-height:1;">
+       👥
+    </div>
+    <div style="display:flex; flex-direction:column; gap:4px; text-align:left;">
+       <span class="stat-label" style="text-align:left;">Total Students</span>
+       <span class="stat-val" style="font-size:2.5rem; text-align:left;">${stats.totalStudents}</span>
+    </div>
+  `;
 
   const eatCard = document.createElement("div");
   eatCard.className = "stat-card";
-  eatCard.innerHTML = `<span class="stat-val">${stats.todayEaters}</span><span class="stat-label">Eating Today</span>`;
+  eatCard.style.cssText = "display:flex; flex-direction:row; justify-content:flex-start; gap:20px; align-items:center;";
+  eatCard.innerHTML = `
+    <div style="background:rgba(6, 182, 212, 0.15); color:var(--brand-secondary); padding:16px; border-radius:50%; font-size:1.5rem; line-height:1;">
+       🍴
+    </div>
+    <div style="display:flex; flex-direction:column; gap:4px; text-align:left;">
+       <span class="stat-label" style="text-align:left;">Eating Today</span>
+       <span class="stat-val" style="font-size:2.5rem; text-align:left;">${stats.todayEaters}</span>
+    </div>
+  `;
 
   container.appendChild(totalCard);
   container.appendChild(eatCard);
@@ -421,27 +452,66 @@ async function searchAttendance() {
 
     clearNode(el.searchUsers);
     data.users.forEach((user) => {
-      const item = makeItem();
-      item.style.cursor = "pointer";
+      const item = document.createElement("div");
+      item.className = "student-card";
 
-      const nameLine = document.createElement("div");
-      nameLine.style.fontWeight = "bold";
-      nameLine.style.fontSize = "1.1rem";
-      nameLine.textContent = `${user.name} (@${user.username || "no-username"})`;
-      item.appendChild(nameLine);
+      // Badge logic
+      const isExpiring = user.daysLeftFor30 <= 5;
+      const badgeHtml = isExpiring
+         ? `<span class="badge" style="background:rgba(239, 68, 68, 0.2); color:var(--danger)">EXPIRING SOON</span>`
+         : `<span class="badge badge-active">ACTIVE</span>`;
 
-      appendTextLine(item, `Email: ${user.email} | Phone: ${user.phoneNumber || "N/A"}`);
-      appendTextLine(
-        item,
-        `Joined: ${formatDate(user.joiningDate)} | Days left: ${user.daysLeftFor30} | Renewals: ${user.renewals || 0} | Extra Days: ${user.extraDays || 0}`
-      );
+      item.innerHTML = `
+        <div class="student-card-header">
+           <div>
+             <h3 style="margin:0; font-size:1.3rem;">${user.name} <span class="muted" style="font-weight:400; font-size:1rem;">(@${user.username || 'N/A'})</span></h3>
+             <div class="muted" style="font-size:0.85rem; margin-top:4px;"><span class="icon">✉️</span> ${user.email}</div>
+           </div>
+           <div>${badgeHtml}</div>
+        </div>
+        <div class="student-card-stats">
+           <div class="stat-box">
+             <span class="stat-box-label">Phone</span>
+             <span class="stat-box-value">${user.phoneNumber || "N/A"}</span>
+           </div>
+           <div class="stat-box">
+             <span class="stat-box-label">Joined</span>
+             <span class="stat-box-value">${formatDate(user.joiningDate)}</span>
+           </div>
+           <div class="stat-box">
+             <span class="stat-box-label">Days Left</span>
+             <span class="stat-box-value" style="color:var(--brand-secondary);">${user.daysLeftFor30} Days</span>
+           </div>
+           <div class="stat-box">
+             <span class="stat-box-label">Renewals</span>
+             <span class="stat-box-value">${user.renewals || 0}</span>
+           </div>
+           <div class="stat-box">
+             <span class="stat-box-label">Extra</span>
+             <span class="stat-box-value">${user.extraDays || 0}</span>
+           </div>
+        </div>
+      `;
+
+      const actionRow = document.createElement("div");
+      actionRow.className = "row";
+      actionRow.style.marginTop = "8px";
+      
+      const editBtn = document.createElement("button");
+      editBtn.className = "secondary";
+      editBtn.textContent = "Edit Details";
+      editBtn.style.padding = "10px 16px";
+      
+      actionRow.appendChild(editBtn);
+      item.appendChild(actionRow);
 
       const editForm = document.createElement("div");
       editForm.className = "form hidden";
       editForm.style.marginTop = "15px";
-      editForm.style.padding = "15px";
-      editForm.style.background = "rgba(255,255,255,0.05)";
-      editForm.style.borderRadius = "8px";
+      editForm.style.padding = "20px";
+      editForm.style.background = "rgba(255,255,255,0.02)";
+      editForm.style.borderRadius = "12px";
+      editForm.style.border = "1px solid var(--glass-border)";
 
       const uId = user.id || user._id;
       editForm.innerHTML = `
@@ -466,9 +536,7 @@ async function searchAttendance() {
         </div>
       `;
 
-      item.addEventListener("click", (e) => {
-        // Prevent toggling if clicking inside the form inputs/buttons
-        if (editForm.contains(e.target)) return;
+      editBtn.addEventListener("click", () => {
         editForm.classList.toggle("hidden");
       });
 
@@ -721,7 +789,25 @@ safeAddListener("logoutBtn", "click", logout);
 safeAddListener("forgotToggleBtn", "click", () => {
   el.forgotForm.classList.toggle("hidden");
 });
-safeAddListener("themeToggle", "click", toggleTheme);
+el.themeToggle.forEach(btn => {
+  btn.addEventListener("click", toggleTheme);
+});
+
+// Mobile Sidebar Logic
+if (el.mobileMenuBtn) {
+  el.mobileMenuBtn.addEventListener("click", () => {
+    el.appSidebar.classList.toggle("mobile-open");
+  });
+  
+  // Close menu if clicked outside sidebar when open
+  document.addEventListener("click", (e) => {
+    if (el.appSidebar && el.appSidebar.classList.contains("mobile-open")) {
+      if (!el.appSidebar.contains(e.target) && !el.mobileMenuBtn.contains(e.target)) {
+        el.appSidebar.classList.remove("mobile-open");
+      }
+    }
+  });
+}
 
 if (el.exportCsvBtn) {
   el.exportCsvBtn.addEventListener("click", () => {
